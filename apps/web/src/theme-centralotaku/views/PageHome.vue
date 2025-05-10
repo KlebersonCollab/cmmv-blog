@@ -45,9 +45,9 @@
                                 </svg>
                             </div>
                             <div class="absolute bottom-0 left-0 right-0 p-6 bg-gradient-to-t from-black/90 via-black/70 to-transparent text-white">
-                                <div v-if="coverPosts.full && coverPosts.full.categories && coverPosts.full.categories.length > 0" class="mb-2">
-                                    <span class="bg-red-600 text-white px-3 py-1 rounded-md text-sm font-medium">
-                                        {{ coverPosts.full.categories[0].name }}
+                                <div v-if="coverPosts.full && coverPosts.full.categories && coverPosts.full.categories.length > 0" class="mb-2 flex flex-wrap gap-2">
+                                    <span v-for="category in coverPosts.full.categories" :key="category.id" class="bg-red-600 text-white px-3 py-1 rounded-md text-sm font-medium">
+                                        {{ category.name }}
                                     </span>
                                 </div>
                                 <h2 v-if="coverPosts.full" class="text-2xl md:text-3xl font-bold mb-3 text-white drop-shadow-[0_2px_2px_rgba(0,0,0,0.8)] bg-black/30 inline-block py-1 px-2 rounded">{{ coverPosts.full.title }}</h2>
@@ -87,9 +87,9 @@
                                     </svg>
                                 </div>
                                 <div class="absolute bottom-0 left-0 right-0 p-6 bg-gradient-to-t from-black/90 via-black/70 to-transparent text-white">
-                                    <div v-if="post.categories && post.categories.length > 0" class="mb-2">
-                                        <span class="bg-red-600 text-white px-3 py-1 rounded-md text-sm font-medium">
-                                            {{ post.categories[0].name }}
+                                    <div v-if="post.categories && post.categories.length > 0" class="mb-2 flex flex-wrap gap-2">
+                                        <span v-for="category in post.categories" :key="category.id" class="bg-red-600 text-white px-3 py-1 rounded-md text-sm font-medium">
+                                            {{ category.name }}
                                         </span>
                                     </div>
                                     <h2 class="text-2xl md:text-3xl font-bold mb-3 text-white drop-shadow-[0_2px_2px_rgba(0,0,0,0.8)] bg-black/30 inline-block py-1 px-2 rounded">{{ post.title }}</h2>
@@ -155,9 +155,9 @@
                                     </svg>
                                 </div>
                                 <div class="absolute bottom-0 left-0 right-0 p-6 bg-gradient-to-t from-black/90 via-black/70 to-transparent text-white">
-                                    <div v-if="coverPosts.splitMain && coverPosts.splitMain.categories && coverPosts.splitMain.categories.length > 0" class="mb-2">
-                                        <span class="bg-red-600 text-white px-3 py-1 rounded-md text-sm font-medium">
-                                            {{ coverPosts.splitMain.categories[0].name }}
+                                    <div v-if="coverPosts.splitMain && coverPosts.splitMain.categories && coverPosts.splitMain.categories.length > 0" class="mb-2 flex flex-wrap gap-2">
+                                        <span v-for="category in coverPosts.splitMain.categories" :key="category.id" class="bg-red-600 text-white px-3 py-1 rounded-md text-sm font-medium">
+                                            {{ category.name }}
                                         </span>
                                     </div>
                                     <h2 v-if="coverPosts.splitMain" class="text-xl md:text-2xl font-bold mb-3 text-white drop-shadow-[0_2px_2px_rgba(0,0,0,0.8)] bg-black/30 inline-block py-1 px-2 rounded">{{ coverPosts.splitMain.title }}</h2>
@@ -187,9 +187,9 @@
                                         </svg>
                                     </div>
                                     <div class="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/90 via-black/70 to-transparent text-white">
-                                        <div v-if="post.categories && post.categories.length > 0" class="mb-2">
-                                            <span class="bg-red-600 text-white px-2 py-1 rounded-md text-xs font-medium">
-                                                {{ post.categories[0].name }}
+                                        <div v-if="post.categories && post.categories.length > 0" class="mb-2 flex flex-wrap gap-1">
+                                            <span v-for="category in post.categories" :key="category.id" class="bg-red-600 text-white px-2 py-1 rounded-md text-xs font-medium">
+                                                {{ category.name }}
                                             </span>
                                         </div>
                                         <h3 class="text-base font-bold mb-2 text-white drop-shadow-[0_2px_2px_rgba(0,0,0,0.8)] bg-black/30 inline-block py-1 px-2 rounded">{{ post.title }}</h3>
@@ -226,9 +226,9 @@
                                     </svg>
                                 </div>
                                 <div class="absolute bottom-0 left-0 right-0 p-6 bg-gradient-to-t from-black/90 via-black/70 to-transparent text-white">
-                                    <div v-if="post.categories && post.categories.length > 0" class="mb-2">
-                                        <span class="bg-red-600 text-white px-3 py-1 rounded-md text-sm font-medium">
-                                            {{ post.categories[0].name }}
+                                    <div v-if="post.categories && post.categories.length > 0" class="mb-2 flex flex-wrap gap-2">
+                                        <span v-for="category in post.categories" :key="category.id" class="bg-red-600 text-white px-3 py-1 rounded-md text-sm font-medium">
+                                            {{ category.name }}
                                         </span>
                                     </div>
                                     <h2 class="text-xl md:text-2xl font-bold mb-3 text-white drop-shadow-[0_2px_2px_rgba(0,0,0,0.8)] bg-black/30 inline-block py-1 px-2 rounded">{{ post.title }}</h2>
@@ -302,9 +302,9 @@
                                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                                                 </svg>
                                             </div>
-                                            <div v-if="post.categories && post.categories.length > 0" class="absolute top-2 left-2">
-                                                <span class="bg-red-600 text-white px-2 py-1 rounded-md text-xs font-medium">
-                                                    {{ post.categories[0].name }}
+                                            <div v-if="post.categories && post.categories.length > 0" class="absolute top-2 left-2 flex flex-wrap gap-1">
+                                                <span v-for="category in post.categories" :key="category.id" class="bg-red-600 text-white px-2 py-1 rounded-md text-xs font-medium">
+                                                    {{ category.name }}
                                                 </span>
                                             </div>
                                         </div>
@@ -363,9 +363,9 @@
                                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                                                     </svg>
                                                 </div>
-                                                <div v-if="post.categories && post.categories.length > 0" class="absolute top-2 left-2">
-                                                    <span class="bg-red-600 text-white px-2 py-1 rounded-md text-xs font-medium">
-                                                        {{ post.categories[0].name }}
+                                                <div v-if="post.categories && post.categories.length > 0" class="absolute top-2 left-2 flex flex-wrap gap-1">
+                                                    <span v-for="category in post.categories" :key="category.id" class="bg-red-600 text-white px-2 py-1 rounded-md text-xs font-medium">
+                                                        {{ category.name }}
                                                     </span>
                                                 </div>
                                             </div>
