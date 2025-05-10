@@ -48,7 +48,7 @@
                                     <div v-if="post.featureImage" class="post-featured-image relative overflow-hidden rounded-lg max-h-[400px]">
                                         <div class="absolute top-4 left-4 z-10 flex flex-wrap gap-2">
                                             <a v-for="category in post.categories" :key="category.id" :href="`/category/${category.slug}`"
-                                                class="px-3 py-1 bg-[#0a5d28] text-white text-sm font-medium rounded-full shadow-sm hover:bg-[#064019] transition-all">
+                                                class="px-3 py-1 bg-red-600 text-white text-sm font-medium rounded-full shadow-sm hover:bg-red-700 transition-all">
                                                 {{ category.name }}
                                             </a>
                                         </div>
@@ -93,7 +93,7 @@
                                             </div>
 
                                             <div class="post-status ml-4" v-if="post.status !== 'published'">
-                                                <span class="bg-[#ffcc00] text-[#333333] px-2 py-1 rounded-full text-xs font-semibold">{{ post.status?.toUpperCase() }}</span>
+                                                <span class="bg-red-600 text-white px-2 py-1 rounded-full text-xs font-semibold">{{ post.status?.toUpperCase() }}</span>
                                             </div>
                                         </div>
                                     </header>
@@ -108,7 +108,7 @@
                                         <div v-if="post.tags && post.tags.length > 0" class="post-tags">
                                             <div class="tags-list flex flex-wrap gap-2">
                                                 <a v-for="tag in post.tags" :key="tag" :href="`/tag/${tag.slug}`"
-                                                    class="tag bg-neutral-100 text-neutral-700 hover:bg-neutral-200 px-3 py-1 rounded-full text-sm">
+                                                    class="tag bg-gray-200 text-gray-700 hover:!text-white hover:bg-red-600 px-3 py-1 rounded-full text-sm transition-colors">
                                                     {{ tag.name }}
                                                 </a>
                                             </div>
@@ -125,7 +125,7 @@
                                                 <img v-if="author.image" :src="author.image" :alt="author.name"
                                                     class="w-full h-full object-cover" width="44" height="44" />
                                                 <div v-else
-                                                    class="w-full h-full flex items-center justify-center bg-[#0a5d28] text-white font-bold text-lg">
+                                                    class="w-full h-full flex items-center justify-center bg-red-600 text-white font-bold text-lg">
                                                     {{ authorInitials }}
                                                 </div>
                                             </div>
@@ -174,7 +174,7 @@
                                                     fill="currentColor">
                                                     <path
                                                         d="M23.953 4.57a10 10 0 01-2.825.775 4.958 4.958 0 002.163-2.723 10.054 10.054 0 01-3.127 1.184 4.92 4.92 0 00-8.384 4.482C7.69 8.095 4.067 6.13 1.64 3.162a4.822 4.822 0 00-.666 2.475c0 1.71.87 3.213 2.188 4.096a4.904 4.904 0 01-2.228-.616v.06a4.923 4.923 0 003.946 4.827 4.996 4.996 0 01-2.212.085 4.936 4.936 0 004.604 3.417 9.867 9.867 0 01-6.102 2.105c-.39 0-.779-.023-1.17-.067a13.995 13.995 0 007.557 2.209c9.053 0 13.998-7.496 13.998-13.985 0-.21 0-.42-.015-.63A9.935 9.935 0 0024 4.59z" />
-                                                </svg>
+                                            </svg>
                                                 Twitter
                                             </a>
                                             <a v-if="author.facebook" :href="`https://facebook.com/${author.facebook}`" target="_blank"
@@ -234,13 +234,13 @@
 
                                     <!-- Mais Conteúdo Section -->
                                     <div class="mt-10">
-                                        <h2 class="text-xl font-bold mb-6 pb-2 text-[#0a5d28] border-b-2 border-[#ffcc00]">
+                                        <h2 class="text-xl font-bold mb-6 pb-2 text-red-600 border-b-2 border-black">
                                             Mais Conteúdo
                                         </h2>
 
                                         <div ref="relatedPostsObserver" class="min-h-[200px]">
                                             <div v-if="!relatedPostsLoaded" class="flex justify-center items-center py-6">
-                                                <div class="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-[#0a5d28]"></div>
+                                                <div class="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-red-600"></div>
                                                 <span class="ml-3 text-gray-600">Carregando posts relacionados...</span>
                                             </div>
 
@@ -264,7 +264,7 @@
                                                                 </svg>
                                                             </div>
                                                             <div v-if="relatedPost.categories && relatedPost.categories.length > 0" class="absolute top-2 left-2">
-                                                                <span class="bg-[#ffcc00] text-[#333] px-2 py-1 rounded-md text-xs font-medium">
+                                                                <span class="bg-red-600 text-white px-2 py-1 rounded-md text-xs font-medium">
                                                                     {{ relatedPost.categories[0].name }}
                                                                 </span>
                                                             </div>
@@ -272,7 +272,7 @@
                                                     </a>
                                                     <div class="p-4">
                                                         <a :href="`/post/${relatedPost.slug}`" class="block">
-                                                            <h3 class="text-lg font-bold text-gray-800 mb-2 hover:text-[#0a5d28] transition-colors line-clamp-2">
+                                                            <h3 class="text-lg font-bold text-gray-800 mb-2 hover:text-red-600 transition-colors line-clamp-2">
                                                                 {{ relatedPost.title }}
                                                             </h3>
                                                         </a>
@@ -342,7 +342,7 @@
 
                                 <!-- Share Widget -->
                                 <div class="bg-white rounded-lg shadow-md p-5 mb-6">
-                                    <h2 class="text-xl font-bold mb-4 pb-2 text-[#0a5d28] border-b-2 border-[#ffcc00]">
+                                    <h2 class="text-xl font-bold mb-4 pb-2 text-red-600 border-b-2 border-black">
                                         Compartilhar
                                     </h2>
                                     <div class="flex flex-wrap gap-2">
@@ -419,7 +419,7 @@
 
                                 <!-- Popular Posts Widget -->
                                 <div v-if="popularPosts && popularPosts.length > 0" class="bg-white rounded-lg shadow-md p-5 mb-6">
-                                    <h2 class="text-xl font-bold mb-4 pb-2 text-[#0a5d28] border-b-2 border-[#ffcc00]">
+                                    <h2 class="text-xl font-bold mb-4 pb-2 text-red-600 border-b-2 border-black">
                                         Mais Populares
                                     </h2>
 
@@ -446,7 +446,7 @@
                                             </div>
                                             <div class="flex-grow">
                                                 <a :href="`/post/${popularPost.slug}`" class="block">
-                                                    <h4 class="text-sm font-semibold text-gray-800 hover:text-[#0a5d28] transition-colors line-clamp-2">
+                                                    <h4 class="text-sm font-semibold text-gray-800 hover:text-red-600 transition-colors line-clamp-2">
                                                         {{ popularPost.title }}
                                                     </h4>
                                                 </a>
@@ -460,7 +460,7 @@
 
                                 <!-- Categories Widget -->
                                 <div v-if="categories && categories.length > 0" class="bg-white rounded-lg shadow-md p-5 mb-6">
-                                    <h2 class="text-xl font-bold mb-4 pb-2 text-[#0a5d28] border-b-2 border-[#ffcc00]">
+                                    <h2 class="text-xl font-bold mb-4 pb-2 text-red-600 border-b-2 border-black">
                                         Categorias
                                     </h2>
 
@@ -468,10 +468,10 @@
                                         <li v-for="category in categories" :key="category.id" class="border-b border-gray-100 last:border-0 pb-2 last:pb-0">
                                             <a
                                                 :href="`/category/${category.slug}`"
-                                                class="flex justify-between items-center text-gray-700 hover:text-[#0a5d28] transition-colors"
+                                                class="flex justify-between items-center text-gray-700 hover:text-red-600 transition-colors"
                                             >
                                                 {{ category.name }}
-                                                <span class="bg-[#0a5d28] text-white px-2 py-1 rounded-full text-xs font-medium">
+                                                <span class="bg-red-600 text-white px-2 py-1 rounded-full text-xs font-medium">
                                                     {{ category.postCount }}
                                                 </span>
                                             </a>
@@ -1357,7 +1357,7 @@ const sidebarLeftAdContainer = ref(null);
 }
 
 .post-content :deep(blockquote) {
-    border-left: 4px solid #0a5d28;
+    border-left: 4px solid #ef4444; /* red-500 */
     padding-left: 1rem;
     margin: 1rem 0;
     color: #666;
@@ -1388,12 +1388,12 @@ const sidebarLeftAdContainer = ref(null);
 }
 
 .post-content :deep(a) {
-    color: #0a5d28;
+    color: #ef4444; /* red-500 */
     text-decoration: underline;
 }
 
 .post-content :deep(a:hover) {
-    color: #064019;
+    color: #dc2626; /* red-600 */
 }
 
 /* Twitter/X embed styles */
