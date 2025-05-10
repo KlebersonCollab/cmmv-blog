@@ -54,6 +54,8 @@ export const useAdminClient = () => {
         update: (id: string, data: any) => api.authRequest(`blog/posts/${id}`, 'PUT', data),
         delete: (id: string) => api.authRequest(`blog/posts/${id}`, 'DELETE'),
         generate: (data: any) => api.authRequest('blog/posts/generate', 'POST', data),
+        startGenerate: (data: any) => api.authRequest('blog/posts/generate/start', 'POST', data),
+        getGenerateStatus: (jobId: string) => api.authRequest(`blog/posts/generate/status/${jobId}`, 'GET'),
     };
 
     const pages = {
@@ -253,6 +255,14 @@ export const useAdminClient = () => {
         delete: (filename: string) => api.authRequest(`blog/backup/delete?filename=${filename}`, 'DELETE'),
     };
 
+    const prompts = {
+        get: () => api.authRequest('prompts', 'GET'),
+        getById: (id: string) => api.authRequest(`prompts/${id}`, 'GET'),
+        create: (data: any) => api.authRequest('prompts', 'POST', data),
+        update: (id: string, data: any) => api.authRequest(`prompts/${id}`, 'PUT', data),
+        delete: (id: string) => api.authRequest(`prompts/${id}`, 'DELETE'),
+    };
+
     return {
         settings,
         profile,
@@ -273,5 +283,6 @@ export const useAdminClient = () => {
         whitelabelAccess,
         users,
         backup,
+        prompts,
     };
 };
