@@ -212,8 +212,7 @@
                             <span class="absolute bottom-0 left-0 w-10 h-1 bg-red-600"></span>
                         </h3>
                         <p class="text-gray-300 text-sm mb-4">
-                            Portal especializado em notícias, reviews e conteúdo sobre o mundo dos games.
-                            Trazendo as informações mais atualizadas do universo gamer.
+                            🎌 Central Otaku – Onde a paixão por animes se encontra com a informação!
                         </p>
                         <ul class="space-y-2 mb-4">
                             <li><a href="/" class="text-gray-300 hover:text-red-400">Home</a></li>
