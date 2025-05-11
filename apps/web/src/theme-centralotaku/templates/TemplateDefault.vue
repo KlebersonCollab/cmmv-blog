@@ -7,7 +7,7 @@
                     <!-- Logo -->
                     <div class="flex-shrink-0">
                         <a href="/" class="text-2xl font-bold text-white">
-                            <img src="/src/theme-centralotaku/logo3.png" width="130" height="10" alt="Logo" title="Logo">
+                            <img src="/src/theme-centralotaku/logo2.png" width="130" height="10" alt="Logo" title="Logo">
                         </a>
                     </div>
 
