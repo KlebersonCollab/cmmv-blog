@@ -13,6 +13,21 @@ export class FeedService {
     ){}
 
     /**
+     * Escapes text for use in XML.
+     * @param text The text to escape.
+     * @returns The escaped text.
+     */
+    private escapeXmlText(text: string): string {
+        if (!text) return '';
+        return text
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&apos;');
+    }
+
+    /**
      * Get the RSS feed for the blog
      * @param queries - The queries to get the feed for
      * @param req - The request object
@@ -55,11 +70,11 @@ export class FeedService {
             feed.push(`<description>
                 <![CDATA[ <img src="${post.featureImage}" /><br /> ]]>
                 ${this.stripHtml(post.content)}</description>`);
-            feed.push(`<media:content url="${post.featureImage}" medium="image"/>`);
+            feed.push(`<media:content url="${this.escapeXmlText(post.featureImage)}" medium="image"/>`);
 
             for (const category of post.categories) {
                 feed.push(`<category>${category.name}</category>`);
-            };
+            }
 
             feed.push(`</item>`);
         }
@@ -90,23 +105,20 @@ export class FeedService {
                 .replace(/&#39;/g, "'")
                 .replace(/&apos;/g, "'");
 
-            const escapedText = decodedText
-                .replace(/&/g, '&amp;')
-                .replace(/</g, '&lt;')
-                .replace(/>/g, '&gt;')
-                .replace(/"/g, '&quot;')
-                .replace(/'/g, '&apos;');
-
-            const normalizedText = escapedText
+            let normalizedText = decodedText
                 .replace(/\s+/g, ' ')
                 .trim();
 
             const maxLength = 500;
+            let isTruncated = false;
             if (normalizedText.length > maxLength) {
-                return normalizedText.substring(0, maxLength) + '...';
+                normalizedText = normalizedText.substring(0, maxLength - 3); // Reserve space for "..."
+                isTruncated = true;
             }
 
-            return normalizedText;
+            const escapedText = this.escapeXmlText(normalizedText);
+
+            return isTruncated ? escapedText + '...' : escapedText;
         } catch (error) {
             console.error('Error stripping HTML:', error);
             return '';
