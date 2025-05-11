@@ -59,7 +59,7 @@ export class FeedService {
 
             for (const category of post.categories) {
                 feed.push(`<category>${category.name}</category>`);
-            }
+            };
 
             feed.push(`</item>`);
         }
