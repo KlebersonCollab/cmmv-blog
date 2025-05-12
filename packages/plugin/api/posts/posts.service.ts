@@ -47,7 +47,7 @@ export class PostsPublicService {
         private readonly autopostService: AutopostService
     ){}
 
-    @Cron(CronExpression.EVERY_30_MINUTES)
+    @Cron(CronExpression.EVERY_5_MINUTES)
     async handleCronJobs() {
         return await this.processCrons.call(this);
     }
@@ -1438,9 +1438,12 @@ export class PostsPublicService {
         });
 
         if (posts) {
+            const currentTimestamp = new Date().getTime();
+            
             for (const post of posts.data) {
-                if (post.autoPublishAt && post.autoPublishAt < new Date().getTime())
+                if (post.autoPublishAt && post.autoPublishAt <= currentTimestamp) {
                     await this.publishPost(post.id);
+                }
             }
         }
     }
