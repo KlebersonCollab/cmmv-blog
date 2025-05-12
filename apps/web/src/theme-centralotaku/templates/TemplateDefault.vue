@@ -12,7 +12,7 @@
                     </div>
 
                     <!-- Desktop Navigation -->
-                    <nav class="hidden md:flex items-center justify-center space-x-8 font-bold text-lg tracking-wide main-nav">
+                    <nav class="hidden md:flex items-center justify-center space-x-8 font-bold text-lg tracking-wide main-nav overflow-x-auto">
                         <template v-for="category in mainNavCategories.rootCategories" :key="category.id">
                             <div v-if="mainNavCategories.childrenMap[category.id]" class="relative group"
                                 @mouseenter="openDropdowns[category.id] = true"
