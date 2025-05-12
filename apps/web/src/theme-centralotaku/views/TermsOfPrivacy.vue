@@ -1,6 +1,6 @@
 <template>
     <div class="w-full relative">
-        <div class="lg:max-w-4xl md:max-w-3xl px-4 sm:px-6 mx-auto">
+        <div class="max-w-[1400px] mx-auto px-4 py-8">
             <div class="bg-white rounded-lg px-4 sm:px-6 py-8">
                 <h1 class="text-3xl font-bold mb-6 text-neutral-900">Política de Privacidade</h1>
                 <a id="privacy" title="Privacidade"></a>

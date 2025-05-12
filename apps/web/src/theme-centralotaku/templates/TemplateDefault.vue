@@ -12,13 +12,16 @@
                     </div>
 
                     <!-- Desktop Navigation -->
-                    <nav class="hidden md:flex items-center space-x-1">
+                    <nav class="hidden md:flex items-center justify-center space-x-8 font-bold text-lg tracking-wide main-nav">
                         <template v-for="category in mainNavCategories.rootCategories" :key="category.id">
-                            <div v-if="mainNavCategories.childrenMap[category.id]" class="relative">
+                            <div v-if="mainNavCategories.childrenMap[category.id]" class="relative group"
+                                @mouseenter="openDropdowns[category.id] = true"
+                                @mouseleave="openDropdowns[category.id] = false"
+                            >
                                 <button
                                     @click="(e) => toggleDropdown(category.id, e)"
-                                    class="dropdown-toggle text-white hover:bg-slate-700 hover:text-red-500 px-2 py-1 rounded text-sm flex items-center whitespace-nowrap transition-colors"
-                                    :class="{'bg-slate-700 text-red-500': openDropdowns[category.id]}"
+                                    class="dropdown-toggle flex items-center gap-1 px-4 py-2 text-white hover:text-red-500 transition-colors focus:outline-none"
+                                    :class="{'text-red-500': openDropdowns[category.id]}"
                                 >
                                     {{ category.name }}
                                     <svg class="ml-1 w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
@@ -27,19 +30,20 @@
                                 </button>
                                 <div
                                     v-show="openDropdowns[category.id]"
-                                    class="dropdown-menu absolute left-0 mt-1 w-48 rounded-md shadow-lg bg-slate-800 ring-1 ring-slate-700 ring-opacity-5 z-10"
+                                    class="dropdown-menu absolute left-1/2 -translate-x-1/2 min-w-[180px] rounded-lg shadow-xl bg-[#181824] border border-[#222] z-20 py-2 animate-fade-in"
                                 >
-                                    <a v-for="child in mainNavCategories.childrenMap[category.id]" :key="child.id"
+                                    <a v-for="(child, idx) in mainNavCategories.childrenMap[category.id]" :key="child.id"
                                         :href="`/category/${child.slug}`"
-                                        class="block text-white hover:bg-slate-700 hover:text-red-500 px-3 py-2 text-sm transition-colors"
+                                        class="block px-6 py-3 text-white text-base font-semibold hover:bg-[#232334] hover:text-red-500 transition-colors"
                                     >
                                         {{ child.name }}
+                                        <div v-if="idx !== mainNavCategories.childrenMap[category.id].length - 1" class="border-b border-[#333] mx-2"></div>
                                     </a>
                                 </div>
                             </div>
                             <a v-else
                                 :href="`/category/${category.slug}`"
-                                class="text-white hover:bg-slate-700 hover:text-red-500 px-2 py-1 rounded text-sm whitespace-nowrap transition-colors"
+                                class="px-4 py-2 text-white hover:text-red-500 transition-colors"
                             >
                                 {{ category.name }}
                             </a>
@@ -635,5 +639,56 @@ watch(isDarkMode, () => {
     display: -webkit-box;
     -webkit-box-orient: vertical;
     -webkit-line-clamp: 2;
+}
+.main-nav {
+    background: #11111a;
+    min-height: 56px;
+    border-bottom: 1px solid #181824;
+}
+.main-nav a, .main-nav button {
+    font-size: 1.15rem;
+    font-weight: bold;
+    letter-spacing: 0.02em;
+    transition: color 0.2s;
+}
+.main-nav .dropdown-menu {
+    min-width: 180px;
+    background: #181824;
+    border: 1px solid #222;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.45);
+    padding: 0.5rem 0;
+    z-index: 30;
+    animation: fade-in 0.18s;
+    top: 100%;
+}
+.main-nav .dropdown-menu a {
+    color: #fff;
+    font-size: 1.08rem;
+    font-weight: 600;
+    padding: 0.75rem 1.5rem;
+    border-radius: 0;
+    transition: background 0.18s, color 0.18s;
+}
+.main-nav .dropdown-menu a:hover {
+    background: #232334;
+    color: #ef4444;
+}
+.main-nav .dropdown-menu .border-b {
+    border-color: #333 !important;
+}
+@media (max-width: 900px) {
+    .main-nav {
+        font-size: 1rem;
+        min-height: 48px;
+    }
+}
+@keyframes fade-in {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+.header,
+header.bg-black {
+    background: #11111a !important;
+    border-bottom: 1px solid #181824 !important;
 }
 </style>
