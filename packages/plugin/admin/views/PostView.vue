@@ -2112,6 +2112,7 @@ function saveDraft() {
     if (post.value.status === 'cron' && scheduleDate.value) {
         // Garantir que o timestamp seja correto para o fuso horário do cliente
         console.log(`Data/hora original selecionada (scheduleDate.value): ${scheduleDate.value}`);
+        console.log(`ID do post: ${post.value.id || 'Novo post (sem ID)'}`);
         
         const scheduleDateComponents = scheduleDate.value.match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})$/);
         
