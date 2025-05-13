@@ -2109,8 +2109,39 @@ function saveDraft() {
             postData.authors = [postData.author];
     }
 
-    if (post.value.status === 'cron' && scheduleDate.value)
-        postData.autoPublishAt = new Date(scheduleDate.value).getTime();
+    if (post.value.status === 'cron' && scheduleDate.value) {
+        // Garantir que o timestamp seja correto para o fuso horário do cliente
+        console.log(`Data/hora original selecionada (scheduleDate.value): ${scheduleDate.value}`);
+        
+        const scheduleDateComponents = scheduleDate.value.match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})$/);
+        
+        if (scheduleDateComponents) {
+            const [_, year, month, day, hours, minutes] = scheduleDateComponents;
+            console.log(`Componentes extraídos: ano=${year}, mês=${month}, dia=${day}, horas=${hours}, minutos=${minutes}`);
+            
+            // Criar a data baseada nos componentes (no fuso horário local)
+            const dt = new Date();
+            dt.setFullYear(parseInt(year));
+            dt.setMonth(parseInt(month) - 1); // Mês é base 0 em JS
+            dt.setDate(parseInt(day));
+            dt.setHours(parseInt(hours));
+            dt.setMinutes(parseInt(minutes));
+            dt.setSeconds(0);
+            dt.setMilliseconds(0);
+            
+            postData.autoPublishAt = dt.getTime();
+            console.log(`Agendando post para: ${dt.toString()}`);
+            console.log(`Timestamp final (milliseconds): ${postData.autoPublishAt}`);
+            console.log(`Data/hora final convertida de volta: ${new Date(postData.autoPublishAt).toISOString()}`);
+        } else {
+            // Fallback para o método anterior se o formato não corresponder
+            const originalDate = new Date(scheduleDate.value);
+            postData.autoPublishAt = originalDate.getTime();
+            console.log(`Agendando post (método fallback) para: ${originalDate.toString()}`);
+            console.log(`Timestamp final (milliseconds): ${postData.autoPublishAt}`);
+            console.log(`Data/hora final convertida de volta: ${new Date(postData.autoPublishAt).toISOString()}`);
+        }
+    }
 
     const payload = {
         post: postData,
