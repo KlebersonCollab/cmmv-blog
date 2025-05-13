@@ -1431,20 +1431,32 @@ export class PostsPublicService {
      * Process the crons for the posts
      * @returns {Promise<any>}
      */
-    async processCrons(){
-        const PostsEntity = Repository.getEntity("PostsEntity");
-        const posts = await Repository.findAll(PostsEntity, {
-            status: "cron"
-        });
+    async processCrons() {
+        try {
+            const PostsEntity = Repository.getEntity("PostsEntity");
+            const posts = await Repository.findAll(PostsEntity, {
+                status: "cron"
+            });
 
-        if (posts) {
-            const currentTimestamp = new Date().getTime();
-            
-            for (const post of posts.data) {
-                if (post.autoPublishAt && post.autoPublishAt <= currentTimestamp) {
-                    await this.publishPost(post.id);
+            if (posts && posts.data.length > 0) {
+                const currentTimestamp = new Date().getTime();
+                console.log(`[processCrons] Verificando ${posts.data.length} posts agendados. Timestamp atual: ${currentTimestamp}`);
+                
+                for (const post of posts.data) {
+                    console.log(`[processCrons] Post ID: ${post.id}, autoPublishAt: ${post.autoPublishAt}, Timestamp atual: ${currentTimestamp}`);
+                    
+                    if (post.autoPublishAt && post.autoPublishAt <= currentTimestamp) {
+                        console.log(`[processCrons] Publicando post ${post.id} (agendado para ${new Date(post.autoPublishAt).toISOString()})`);
+                        await this.publishPost(post.id);
+                    } else {
+                        console.log(`[processCrons] Post ${post.id} ainda não está pronto para publicação`);
+                    }
                 }
+            } else {
+                console.log(`[processCrons] Nenhum post agendado encontrado.`);
             }
+        } catch (error) {
+            console.error(`[processCrons] Erro ao processar posts agendados:`, error);
         }
     }
 
