@@ -190,7 +190,7 @@
                         <h3 class="text-2xl font-bold mb-2">Inscreva-se em nossa Newsletter</h3>
                         <p class="text-gray-200 mb-4">
                             Receba as últimas notícias e atualizações diretamente no seu e-mail.
-                            Fique por dentro de tudo sobre o universo gamer.
+                            Fique por dentro de tudo sobre o universo Otaku.
                         </p>
                     </div>
                     <div class="md:w-1/2 w-full">
