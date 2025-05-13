@@ -1434,13 +1434,24 @@ export class PostsPublicService {
     async processCrons() {
         try {
             const PostsEntity = Repository.getEntity("PostsEntity");
+            
+            // Log para mostrar a consulta que será feita
+            console.log(`[processCrons] Buscando posts com status "cron"`);
+            
+            // Definir timestamp atual no escopo principal para uso em qualquer parte da função
+            const currentTimestamp = new Date().getTime();
+            
+            // Buscar todos os posts agendados sem limite
             const posts = await Repository.findAll(PostsEntity, {
-                status: "cron"
+                status: "cron",
+                limit: 1000 // Garantir que todos os posts sejam retornados
             });
 
             if (posts && posts.data.length > 0) {
-                const currentTimestamp = new Date().getTime();
                 console.log(`[processCrons] Verificando ${posts.data.length} posts agendados. Timestamp atual: ${currentTimestamp}`);
+                
+                // Log com todos os IDs para depuração
+                console.log(`[processCrons] IDs de todos os posts agendados: ${posts.data.map(p => p.id).join(', ')}`);
                 
                 for (const post of posts.data) {
                     console.log(`[processCrons] Post ID: ${post.id}, autoPublishAt: ${post.autoPublishAt}, Timestamp atual: ${currentTimestamp}`);
@@ -1454,6 +1465,21 @@ export class PostsPublicService {
                 }
             } else {
                 console.log(`[processCrons] Nenhum post agendado encontrado.`);
+                
+                // Verificação adicional direto pelo ID para depuração
+                console.log(`[processCrons] Verificando diretamente o status dos posts por ID`);
+                
+                try {
+                    // Verificar um post específico diretamente (substitua pelo ID real)
+                    const postExample = await Repository.findOne(PostsEntity, { id: "833f1582-ae91-4efe-a74a-4e456d0db651" });
+                    if (postExample) {
+                        console.log(`[processCrons] Post específico encontrado: ID=${postExample.id}, status=${postExample.status}, autoPublishAt=${postExample.autoPublishAt}, currentTimestamp=${currentTimestamp}`);
+                    } else {
+                        console.log(`[processCrons] Post específico NÃO encontrado`);
+                    }
+                } catch (specificError) {
+                    console.error(`[processCrons] Erro ao verificar post específico:`, specificError);
+                }
             }
         } catch (error) {
             console.error(`[processCrons] Erro ao processar posts agendados:`, error);
