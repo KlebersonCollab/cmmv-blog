@@ -1,0 +1,989 @@
+<template>
+    <div class="w-full relative overflow-x-hidden" :class="{ 'content-with-sidebar': isLargeScreen }">
+        <!-- Top AdSense Banner -->
+        <div v-if="adSettings.enableAds && adSettings.articlePageHeader" class="w-full bg-gray-100 rounded-lg mb-4 sm:mb-8 overflow-visible flex justify-center mx-auto px-1 sm:px-4" :class="isLargeScreen ? 'max-w-[1200px]' : 'max-w-full'">
+            <div class="ad-container ad-banner-top py-2 px-2 sm:px-4" v-if="getAdHtml('header')">
+                <div v-html="getAdHtml('header')"></div>
+            </div>
+            <div class="ad-container ad-banner-top py-2 px-2 sm:px-4" v-else>
+                <div class="ad-placeholder h-[90px] sm:h-[90px] w-full max-w-[728px] bg-gray-200 flex items-center justify-center text-gray-400 text-sm">
+                    <span>Anúncio</span>
+                </div>
+            </div>
+        </div>
+
+        <div v-if="!post" class="container mx-auto max-w-4xl px-4 py-12">
+            <div class="bg-neutral-800 p-6 rounded-lg text-center">
+                <h1 class="text-2xl font-bold text-white mb-4">Post not found</h1>
+                <p class="text-neutral-400">The post you're looking for doesn't exist or is unavailable.</p>
+            </div>
+        </div>
+
+        <div v-else class="article-container w-full px-1 sm:px-4 m-auto overflow-x-hidden" :class="isLargeScreen ? 'max-w-[1200px]' : 'max-w-full'">
+            <div class="w-full px-1 sm:px-4 lg:px-6 mx-auto overflow-x-hidden">
+                <div v-if="post.featureImage" class="post-featured-image relative overflow-hidden rounded-sm sm:rounded-lg max-h-[200px] sm:max-h-[400px] mb-2 sm:mb-4">
+                    <div class="absolute top-1 left-1 sm:top-4 sm:left-4 z-10 flex flex-wrap gap-0.5 sm:gap-2">
+                        <a v-for="category in post.categories" :key="category.id" :href="`/category/${category.slug}`"
+                            class="category-badge px-1.5 py-0.5 sm:px-3 sm:py-1 bg-red-500 bg-opacity-85 text-white text-xs sm:text-sm font-medium rounded-full shadow-sm hover:bg-opacity-100 transition-all">
+                            {{ category.name }}
+                        </a>
+                    </div>
+
+                    <img
+                        :src="post.featureImage"
+                        :alt="post.featureImageAlt || post.title"
+                        class="featured-img"
+                        loading="lazy"
+                        width="1060"
+                        height="400"
+                        :title="post.title"
+                        aria-label="Cover Image"
+                        fetchpriority="high"
+                    />
+                    <p v-if="post.featureImageCaption" class="image-caption text-neutral-600 dark:text-neutral-400">{{
+                        post.featureImageCaption }}</p>
+                </div>
+
+                <!-- Post Header -->
+                <header class="post-header py-2 sm:py-6">
+                    <h1 class="post-title text-xl sm:text-2xl lg:text-3xl font-bold text-neutral-900 dark:text-white break-words mb-2 sm:mb-4 leading-tight">{{ post.title }}</h1>
+
+                    <div class="post-meta">
+                        <div class="flex items-center text-neutral-600 dark:text-neutral-400 text-xs sm:text-sm">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-1.5 flex-shrink-0" fill="none" viewBox="0 0 24 24"
+                                stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                            </svg>
+                            <span>{{ formatDate(post.status === 'published' ? post.publishedAt : post.updatedAt) }}</span>
+                        </div>
+
+                        <div class="post-status mt-2" v-if="post.status !== 'published'">
+                            <span class="status-badge px-2 py-1 bg-orange-100 text-orange-800 text-xs rounded-full">{{ post.status?.toUpperCase() }}</span>
+                        </div>
+                    </div>
+                </header>
+
+                <!-- After Title Ad -->
+                <div v-if="adSettings.enableAds && adSettings.articlePageAfterTitle" class="w-full bg-gray-100 rounded-lg my-3 sm:my-6 overflow-visible flex justify-center">
+                    
+                    <div class="ad-container ad-after-title py-2 px-2 sm:px-4" v-if="getAdHtml('afterTitle')">
+                        <div v-html="getAdHtml('afterTitle')"></div>
+                    </div>
+                    <div class="ad-container ad-after-title py-2 px-2 sm:px-4" v-else>
+                        <div class="ad-placeholder h-[90px] w-full max-w-[728px] bg-gray-200 flex items-center justify-center text-gray-400 text-sm">
+                            <span>Anúncio</span>
+                        </div>
+                    </div>
+                </div>
+
+                 <!-- Share Box -->
+                 <div class="share-section py-4 sm:py-8 border-t border-neutral-200 dark:border-neutral-800">
+                            <div class="flex flex-col space-y-3 sm:space-y-4">
+                                <!-- Share text and icons -->
+                                <div class="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
+                                    <span class="text-neutral-600 dark:text-neutral-400 text-sm font-medium">Compartilhar:</span>
+
+                                    <div class="flex gap-2 flex-wrap">
+                                        <!-- Facebook -->
+                                        <a class="bg-blue-600 hover:bg-blue-700 w-8 h-8 rounded-full flex items-center justify-center text-white transition-colors"
+                                            rel="nofollow noopener"
+                                            :href="'https://www.facebook.com/sharer/sharer.php?u=' + encodeURIComponent(pageUrl)"
+                                            onclick="window.open(this.href, 'facebook-share','width=580,height=296');return false;"
+                                            title="Share on Facebook">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
+                                                fill="currentColor">
+                                                <path
+                                                    d="M9.19795 21.5H13.198V13.4901H16.8021L17.198 9.50977H13.198V7.5C13.198 6.94772 13.6457 6.5 14.198 6.5H17.198V2.5H14.198C11.4365 2.5 9.19795 4.73858 9.19795 7.5V9.50977H7.19795L6.80206 13.4901H9.19795V21.5Z" />
+                                            </svg>
+                                        </a>
+
+                                        <!-- X/Twitter -->
+                                        <a class="bg-black hover:bg-gray-800 w-8 h-8 rounded-full flex items-center justify-center text-white transition-colors"
+                                            rel="nofollow noopener"
+                                            :href="'https://x.com/share?text=' + encodeURIComponent(post.title) + '&url=' + encodeURIComponent(pageUrl)"
+                                            onclick="window.open(this.href, 'x-share', 'width=550,height=420');return false;"
+                                            title="Share on X">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
+                                                fill="currentColor">
+                                                <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+                                            </svg>
+                                        </a>
+
+                                        
+                                        <!-- LinkedIn -->
+                                        <a class="bg-blue-700 hover:bg-blue-800 w-8 h-8 rounded-full flex items-center justify-center text-white transition-colors"
+                                            rel="nofollow noopener"
+                                            :href="'https://www.linkedin.com/shareArticle?mini=true&url=' + encodeURIComponent(pageUrl) + '&title=' + encodeURIComponent(post.title)"
+                                            onclick="window.open(this.href, 'linkedin-share', 'width=490,height=530');return false;"
+                                            title="Share on LinkedIn">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
+                                                fill="currentColor">
+                                                <path
+                                                    d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z" />
+                                            </svg>
+                                        </a>
+
+                                        <!-- WhatsApp -->
+                                        <a class="bg-green-500 hover:bg-green-600 w-8 h-8 rounded-full flex items-center justify-center text-white transition-colors"
+                                            rel="nofollow noopener"
+                                            :href="'https://api.whatsapp.com/send?text=' + encodeURIComponent(post.title + ' ' + pageUrl)"
+                                            data-action="share/whatsapp/share" title="Share on WhatsApp">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
+                                                fill="currentColor">
+                                                <path
+                                                    d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" />
+                                            </svg>
+                                        </a>
+
+                                        <!-- Copy Link -->
+                                        <button onclick="
+                                            const url = window.location.href;
+                                            const btn = this;
+                                            const feedback = btn.querySelector('.copy-feedback');
+                                            if (feedback) {
+                                                feedback.style.display = 'block';
+                                                setTimeout(() => feedback.style.display = 'none', 2000);
+                                            }
+                                            
+                                            // Copiar para clipboard
+                                            if (navigator.clipboard) {
+                                                navigator.clipboard.writeText(url).then(() => {
+                                                    console.log('✅ Link copiado com sucesso!');
+                                                }).catch(err => {
+                                                    console.error('❌ Erro:', err);
+                                                });
+                                            } else {
+                                                console.log('📋 Usando fallback...');
+                                                const textArea = document.createElement('textarea');
+                                                textArea.value = url;
+                                                textArea.style.position = 'fixed';
+                                                textArea.style.left = '-9999px';
+                                                document.body.appendChild(textArea);
+                                                textArea.select();
+                                                document.execCommand('copy');
+                                                document.body.removeChild(textArea);
+                                                console.log('✅ Link copiado via fallback!');
+                                            }
+                                        "
+                                            class="bg-gray-500 hover:bg-gray-600 w-8 h-8 rounded-full flex items-center justify-center text-white transition-colors relative"
+                                            title="Copiar link da página">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
+                                                fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                                stroke-linejoin="round">
+                                                <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
+                                                <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
+                                            </svg>
+                                            <span class="copy-feedback absolute -top-10 left-1/2 transform -translate-x-1/2 bg-green-600 text-white text-xs py-1 px-2 rounded whitespace-nowrap z-10 shadow-lg" style="display: none;">
+                                                ✅ Link copiado!
+                                            </span>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                <!-- Main Content Layout -->
+                <div class="w-full overflow-x-hidden">
+                    <!-- Article Content -->
+                    <div class="w-full max-w-none overflow-x-hidden">
+                        <!-- Post Content -->
+                        <div class="post-content text-neutral-900 dark:text-neutral-300 prose prose-sm sm:prose lg:prose-lg prose-neutral dark:prose-invert max-w-none overflow-x-hidden not-italic">
+                            <div class="break-words overflow-x-hidden not-italic" v-html="post.content"></div>
+                        </div>
+
+                        <!-- In-Content Ad -->
+                        <div v-if="adSettings.enableAds && adSettings.articlePageInContent" class="w-full bg-gray-100 rounded-lg my-4 sm:my-8 overflow-visible flex justify-center">
+                            <div class="ad-container ad-banner-mid py-2 px-2 sm:px-4" v-if="getAdHtml('inContent')">
+                                <div v-html="getAdHtml('inContent')"></div>
+                            </div>
+                            <div class="ad-container ad-banner-mid py-2 px-2 sm:px-4" v-else>
+                                <div class="ad-placeholder h-[90px] w-full max-w-[728px] bg-gray-200 flex items-center justify-center text-gray-400 text-sm">
+                                    <span>Anúncio</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Tags & Categories -->
+                        <div class="post-taxonomy py-3 sm:py-6">
+                            <div v-if="post.tags && post.tags.length > 0" class="post-tags">
+                                <div class="tags-list flex flex-wrap gap-1 sm:gap-2">
+                                    <a v-for="tag in post.tags" :key="tag" :href="`/tag/${tag.slug}`"
+                                        class="tag px-2 py-1 sm:px-3 sm:py-1.5 bg-neutral-100 dark:bg-neutral-700 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-200 dark:hover:bg-neutral-600 text-xs sm:text-sm rounded-full transition-colors">
+                                        {{ tag.name }}
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- After Content Ad -->
+                        <div v-if="adSettings.enableAds && adSettings.articlePageAfterContent" class="w-full bg-gray-100 rounded-lg mt-4 mb-3 sm:mt-8 sm:mb-4 overflow-visible flex justify-center">
+                            <div class="ad-container ad-banner-bottom py-2 px-2 sm:px-4" v-if="getAdHtml('belowContent')">
+                                <div v-html="getAdHtml('belowContent')"></div>
+                            </div>
+                            <div class="ad-container ad-banner-bottom py-2 px-2 sm:px-4" v-else>
+                                <div class="ad-placeholder h-[90px] w-full max-w-[728px] bg-gray-200 flex items-center justify-center text-gray-400 text-sm">
+                                    <span>Anúncio</span>
+                                </div>
+                            </div>
+                        </div>
+
+                       
+
+                        <!-- Author Box -->
+                        <div v-if="author"
+                            class="author-box mb-4 sm:mb-10 p-4 sm:p-6 bg-white dark:bg-neutral-900 rounded-lg border border-neutral-300 dark:border-neutral-600 shadow-sm">
+                            <div class="flex flex-col sm:flex-row sm:items-start gap-3 sm:gap-4 mb-3 sm:mb-4">
+                                <!-- Author Avatar -->
+                                <div class="flex sm:block items-center gap-3 sm:gap-0">
+                                    <div class="relative">
+                                        <div class="w-16 h-16 sm:w-24 sm:h-24 rounded-full overflow-hidden flex-shrink-0 border-4 border-red-500 shadow-lg ring-4 ring-red-100 dark:ring-red-900">
+                                            <img v-if="author.image" :src="author.image" :alt="author.name"
+                                                class="w-full h-full object-cover hover:scale-105 transition-transform duration-300" />
+                                            <div v-else
+                                                class="w-full h-full flex items-center justify-center bg-gradient-to-br from-red-500 to-red-600 text-white font-bold text-lg sm:text-2xl">
+                                                {{ authorInitials }}
+                                            </div>
+                                        </div>
+                                        <!-- Badge/Indicator -->
+                                        <div class="absolute -bottom-1 -right-1 w-6 h-6 sm:w-8 sm:h-8 bg-green-500 border-3 border-white dark:border-neutral-900 rounded-full flex items-center justify-center">
+                                            <svg xmlns="http://www.w3.org/2000/svg" class="w-3 h-3 sm:w-4 sm:h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                                            </svg>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Author Info Mobile -->
+                                    <div class="flex-1 sm:hidden">
+                                        <div class="bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-700 p-3 rounded-lg border-l-4 border-red-500">
+                                            <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-1 leading-tight">
+                                                <a :href="`/author/${author.slug}`" class="hover:text-red-600 dark:hover:text-red-400 transition-colors">
+                                                    ✍️ {{ author.name }}
+                                                </a>
+                                            </h3>
+                                            <p v-if="author.location" class="text-base text-gray-700 dark:text-gray-200 flex items-center font-semibold">
+                                                <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 mr-1.5 flex-shrink-0 text-red-500" fill="none"
+                                                    viewBox="0 0 24 24" stroke="currentColor">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                        d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                                                                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                    d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                                                </svg>
+                                                <span class="text-red-600 dark:text-red-400">📍 {{ author.location }}</span>
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Author Info Desktop -->
+                                <div class="flex-1 hidden sm:block">
+                                    <div class="bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-700 p-4 rounded-lg mb-3 border-l-4 border-red-500">
+                                        <h3 class="text-2xl font-bold text-gray-900 dark:text-white mb-2 leading-tight">
+                                            <a :href="`/author/${author.slug}`" class="hover:text-red-600 dark:hover:text-red-400 transition-colors">
+                                                ✍️ {{ author.name }}
+                                            </a>
+                                        </h3>
+                                        <p v-if="author.location" class="text-lg text-gray-700 dark:text-gray-200 flex items-center font-semibold">
+                                            <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 mr-2 flex-shrink-0 text-red-500" fill="none"
+                                                viewBox="0 0 24 24" stroke="currentColor">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                    d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                    d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                                            </svg>
+                                            <span class="text-red-600 dark:text-red-400">📍 {{ author.location }}</span>
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Author Bio -->
+                            <div v-if="author.bio" class="text-sm sm:text-base leading-relaxed text-neutral-700 dark:text-neutral-200 mb-4 bg-neutral-50 dark:bg-neutral-800 p-3 rounded-md">
+                                {{ author.bio }}
+                            </div>
+
+                            <!-- Social Links -->
+                            <div class="border-t border-neutral-200 dark:border-neutral-700 pt-3">
+                                <p class="text-xs text-neutral-500 dark:text-neutral-400 mb-2 font-medium">Redes Sociais:</p>
+                                <div class="flex flex-wrap gap-2">
+                                    <a v-if="author.website" :href="author.website" target="_blank" rel="noopener noreferrer"
+                                        class="inline-flex items-center px-3 py-1.5 bg-blue-100 dark:bg-blue-900 hover:bg-blue-200 dark:hover:bg-blue-800 rounded-full text-xs sm:text-sm text-blue-700 dark:text-blue-300 transition-colors font-medium">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-1.5" fill="none" viewBox="0 0 24 24"
+                                            stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" />
+                                        </svg>
+                                        Website
+                                    </a>
+                                    <a v-if="author.twitter" :href="`https://twitter.com/${author.twitter}`" target="_blank"
+                                        rel="noopener noreferrer"
+                                        class="inline-flex items-center px-3 py-1.5 bg-sky-100 dark:bg-sky-900 hover:bg-sky-200 dark:hover:bg-sky-800 rounded-full text-xs sm:text-sm text-sky-700 dark:text-sky-300 transition-colors font-medium">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-1.5" viewBox="0 0 24 24"
+                                            fill="currentColor">
+                                            <path
+                                                d="M23.953 4.57a10 10 0 01-2.825.775 4.958 4.958 0 002.163-2.723 10.054 10.054 0 01-3.127 1.184 4.92 4.92 0 00-8.384 4.482C7.69 8.095 4.067 6.13 1.64 3.162a4.822 4.822 0 00-.666 2.475c0 1.71.87 3.213 2.188 4.096a4.904 4.904 0 01-2.228-.616v.06a4.923 4.923 0 003.946 4.827 4.996 4.996 0 01-2.212.085 4.936 4.936 0 004.604 3.417 9.867 9.867 0 01-6.102 2.105c-.39 0-.779-.023-1.17-.067a13.995 13.995 0 007.557 2.209c9.053 0 13.998-7.496 13.998-13.985 0-.21 0-.42-.015-.63A9.935 9.935 0 0024 4.59z" />
+                                        </svg>
+                                        Twitter
+                                    </a>
+                                <a v-if="author.facebook" :href="`https://facebook.com/${author.facebook}`" target="_blank"
+                                    rel="noopener noreferrer"
+                                    class="inline-flex items-center px-3 py-1.5 bg-neutral-200 dark:bg-neutral-700 hover:bg-neutral-300 dark:hover:bg-neutral-600 rounded-full text-sm text-neutral-700 dark:text-neutral-300 transition-colors">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 mr-1.5" viewBox="0 0 24 24"
+                                        fill="currentColor">
+                                        <path
+                                            d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
+                                    </svg>
+                                    Facebook
+                                </a>
+                                <a v-if="author.instagram" :href="`https://instagram.com/${author.instagram}`" target="_blank"
+                                    rel="noopener noreferrer"
+                                    class="inline-flex items-center px-3 py-1.5 bg-neutral-200 dark:bg-neutral-700 hover:bg-neutral-300 dark:hover:bg-neutral-600 rounded-full text-sm text-neutral-700 dark:text-neutral-300 transition-colors">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 mr-1.5" viewBox="0 0 24 24"
+                                        fill="currentColor">
+                                        <path
+                                            d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z" />
+                                    </svg>
+                                    Instagram
+                                </a>
+                                <a v-if="author.linkedin" :href="`https://linkedin.com/in/${author.linkedin}`" target="_blank"
+                                    rel="noopener noreferrer"
+                                    class="inline-flex items-center px-3 py-1.5 bg-neutral-200 dark:bg-neutral-700 hover:bg-neutral-300 dark:hover:bg-neutral-600 rounded-full text-sm text-neutral-700 dark:text-neutral-300 transition-colors">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 mr-1.5" viewBox="0 0 24 24"
+                                        fill="currentColor">
+                                        <path
+                                            d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z" />
+                                    </svg>
+                                    LinkedIn
+                                </a>
+                                    <a v-if="author.github" :href="`https://github.com/${author.github}`" target="_blank"
+                                        rel="noopener noreferrer"
+                                        class="inline-flex items-center px-3 py-1.5 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-full text-xs sm:text-sm text-gray-700 dark:text-gray-300 transition-colors font-medium">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-1.5" viewBox="0 0 24 24"
+                                            fill="currentColor">
+                                            <path
+                                                d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.236 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12" />
+                                        </svg>
+                                        Github
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+
+                <div id="comments-container"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Taboola JS Code -->
+    <div v-if="adSettings.enableAds && adSettings.enableTaboolaAds && adSettings.taboolaJsCode" v-html="adSettings.taboolaJsCode"></div>
+</template>
+
+<script setup lang="ts">
+//@ts-nocheck
+import {
+    ref, computed, onServerPrefetch,
+    onMounted, onBeforeUnmount, watchEffect, watch
+} from 'vue'
+import { useRoute } from 'vue-router'
+import { useHead } from '@unhead/vue'
+import { vue3 } from '@cmmv/blog/client'
+import { formatDate, stripHtml } from '../../composables/useUtils'
+import CommentSection from '../../components/CommentSection.vue'
+import { useSettingsStore } from '../../store/settings';
+
+// Função para detectar o tipo de imagem com base na URL
+const getImageMimeType = (url: string) => {
+    if (!url) return 'image/jpeg'; // Tipo padrão se não tiver URL
+    
+    // Extrai a extensão da URL
+    const extension = url.split('.').pop()?.toLowerCase() || '';
+    
+    // Mapeia extensões comuns para tipos MIME
+    const mimeTypes: Record<string, string> = {
+        'jpg': 'image/jpeg',
+        'jpeg': 'image/jpeg',
+        'png': 'image/png',
+        'webp': 'image/webp',
+        'gif': 'image/gif',
+        'svg': 'image/svg+xml',
+        'avif': 'image/avif',
+        'bmp': 'image/bmp'
+    };
+    
+    // Retorna o tipo MIME correspondente ou um padrão se não encontrar
+    return mimeTypes[extension] || 'image/jpeg';
+};
+
+// Composables para responsividade
+const isLargeScreen = ref(false);
+
+const checkScreenSize = () => {
+    isLargeScreen.value = window.innerWidth >= 1690;
+}
+
+const handleResize = () => {
+    checkScreenSize();
+}
+
+const settingsStore = useSettingsStore();
+const blogAPI = vue3.useBlog()
+const route = useRoute()
+
+const settings = ref<any>(settingsStore.getSettings);
+const post = ref<any>(null)
+const author = computed(() => post.value?.authors.find((a: any) => a.user === post.value.author))
+
+const authorInitials = computed(() => {
+    return author.value?.name
+        ? author.value.name
+            .split(' ')
+            .map((n: string) => n[0])
+            .join('')
+            .substring(0, 2)
+            .toUpperCase()
+        : '?'
+})
+
+
+
+const isSSR = import.meta.env.SSR
+
+post.value = await route.params.id
+        ? await blogAPI.posts.getById(route.params.id as string)
+        : await blogAPI.posts.getBySlug(route.params.slug as string)
+
+const pageUrl = computed(() => {
+    return `${import.meta.env.VITE_WEBSITE_URL}/post/${post.value?.slug || ''}`
+})
+const keywords = computed(() => post.value.keywords ||
+    (post.value.tags?.map((tag: any) => tag.name).join(', ') || ''))
+const description = computed(() =>
+    stripHtml(post.value.description || post.value.excerpt || post.value.content || '')
+        .substring(0, 150) + '...'
+)
+
+const metadata = computed(() =>  keywords.value
+    .split(', ')
+    .map((k: string) => ({ property: 'article:tag', content: k })))
+
+if(settings.value){
+    const headData = computed(() => {
+        // Detecta o tipo MIME da imagem em destaque
+        const featureImageType = getImageMimeType(post.value?.featureImage || '');
+        
+        return {
+            title: post.value.title,
+            meta: [
+                { name: 'description', content: description.value },
+                { name: 'keywords', content: keywords.value },
+                { property: 'og:type', content: 'article' },
+                { property: 'og:title', content: post.value.title },
+                { property: 'og:description', content: description },
+                { property: 'og:image', content: post.value.featureImage || settings.value?.['blog.image'] },
+                { property: 'og:url', content: pageUrl.value },
+                { property: 'og:image:type', content: featureImageType },
+                { property: 'og:image:alt', content: post.value?.title },
+                { property: 'og:image:secure_url', content: post.value?.featureImage || settings.value?.['blog.image'] },
+                { property: 'og:image:width', content: '1200' },
+                { property: 'og:image:height', content: '675' },
+                { property: 'og:updated_time', content: new Date(post.value?.updatedAt).toISOString() },
+                { property: 'article:published_time', content: post.value?.status === 'published' ? new Date(post.value?.publishedAt).toISOString() : new Date(post.value?.createdAt).toISOString() },
+                { property: 'article:modified_time', content: new Date(post.value?.updatedAt).toISOString() },
+                { name: 'twitter:card', content: 'summary_large_image' },
+                { name: 'twitter:title', content: post.value.title },
+                { name: 'twitter:description', content: description },
+                { name: 'twitter:image', content: post.value?.featureImage || settings.value?.['blog.image'] },
+                { name: 'twitter:url', content: pageUrl.value },
+                ...metadata.value
+            ],
+            link: [
+                { rel: 'canonical', href: pageUrl.value },
+                { rel: 'alternate', href: `${settings.value['blog.url'] || ''} /feed`, type: 'application/rss+xml', title: settings.value['blog.title'] || 'Blog' }
+            ],
+            script: isSSR ? [
+                {
+                    type: 'application/ld+json',
+                    innerHTML: JSON.stringify(vue3.createLdJSON('post', post.value, settings.value))
+                }
+            ] : []
+        }
+    });
+
+    useHead(headData)
+}
+
+
+// Helper function to check if a value is truthy
+const isTruthy = (value: any) => {
+    if (typeof value === 'string') {
+        return value.toLowerCase() === 'true' || value === '1' || value === 'on' || value === 'yes';
+    }
+    return Boolean(value);
+};
+
+// Ad Settings
+const adSettings = computed(() => {
+    const rawSettings = settings.value || {};
+
+    const result: Record<string, any> = {
+        // Convert potential string values to proper booleans
+        enableAds: isTruthy(rawSettings['blog.enableAds']),
+        showAdsLoggedIn: isTruthy(rawSettings['blog.showAdsLoggedIn']),
+
+        // Ad positions for article page - default to true for most positions
+        articlePageHeader: rawSettings['blog.articlePageHeader'] === undefined ? true : isTruthy(rawSettings['blog.articlePageHeader']),
+        articlePageSidebarTop: rawSettings['blog.articlePageSidebarTop'] === undefined ? true : isTruthy(rawSettings['blog.articlePageSidebarTop']),
+        articlePageSidebarMid: rawSettings['blog.articlePageSidebarMid'] === undefined ? true : isTruthy(rawSettings['blog.articlePageSidebarMid']),
+        articlePageSidebarBottom: rawSettings['blog.articlePageSidebarBottom'] === undefined ? true : isTruthy(rawSettings['blog.articlePageSidebarBottom']),
+        articlePageAfterTitle: isTruthy(rawSettings['blog.articlePageAfterTitle']),
+        articlePageInContent: rawSettings['blog.articlePageInContent'] === undefined ? true : isTruthy(rawSettings['blog.articlePageInContent']),
+        articlePageAfterContent: rawSettings['blog.articlePageAfterContent'] === undefined ? true : isTruthy(rawSettings['blog.articlePageAfterContent']),
+        articlePageFooter: isTruthy(rawSettings['blog.articlePageFooter']),
+
+        // AdSense settings
+        enableAdSense: isTruthy(rawSettings['blog.enableAdSense']),
+        adSensePublisherId: rawSettings['blog.adSensePublisherId'] || '',
+        adSenseAutoAdsCode: rawSettings['blog.adSenseAutoAdsCode'] || '',
+        enableAdSenseAutoAds: isTruthy(rawSettings['blog.enableAdSenseAutoAds']),
+        adSenseHeaderBanner: rawSettings['blog.adSenseHeaderBanner'] || '',
+        adSenseSidebarTop: rawSettings['blog.adSenseSidebarTop'] || '',
+        adSenseSidebarMid: rawSettings['blog.adSenseSidebarMid'] || '',
+        adSenseSidebarBottom: rawSettings['blog.adSenseSidebarBottom'] || '',
+        adSenseSidebarLeft: rawSettings['blog.adSenseSidebarLeft'] || '',
+        adSenseAfterCover: rawSettings['blog.adSenseAfterCover'] || '',
+        adSenseAfterTitle: rawSettings['blog.adSenseAfterTitle'] || '',
+        adSenseInArticle: rawSettings['blog.adSenseInArticle'] || '',
+        adSenseBelowContent: rawSettings['blog.adSenseBelowContent'] || '',
+
+        // Custom Ads
+        enableCustomAds: isTruthy(rawSettings['blog.enableCustomAds']),
+        customHeaderBanner: rawSettings['blog.customHeaderBanner'] || '',
+        customSidebarTop: rawSettings['blog.customSidebarTop'] || '',
+        customSidebarBottom: rawSettings['blog.customSidebarBottom'] || '',
+        customInArticle: rawSettings['blog.customInArticle'] || '',
+        customBelowContent: rawSettings['blog.customBelowContent'] || '',
+
+        // Amazon Affiliate
+        enableAmazonAds: isTruthy(rawSettings['blog.enableAmazonAds']),
+        amazonAssociateId: rawSettings['blog.amazonAssociateId'] || '',
+        amazonSidebarAd: rawSettings['blog.amazonSidebarAd'] || '',
+        amazonInContentAd: rawSettings['blog.amazonInContentAd'] || '',
+        amazonBelowContentAd: rawSettings['blog.amazonBelowContentAd'] || '',
+
+        // Taboola Ads
+        enableTaboolaAds: isTruthy(rawSettings['blog.enableTaboolaAds']),
+        taboolaPublisherId: rawSettings['blog.taboolaPublisherId'] || '',
+        taboolaBelowArticle: rawSettings['blog.taboolaBelowArticle'] || '',
+        taboolaRightRail: rawSettings['blog.taboolaRightRail'] || '',
+        taboolaFooter: rawSettings['blog.taboolaFooter'] || '',
+        taboolaJsCode: rawSettings['blog.taboolaJsCode'] || '',
+    };
+
+    return result;
+});
+
+const getAdHtml = (position: string) => {
+    if (!adSettings.value.enableAds) return '';
+
+    const positionSetting = `articlePage${position.charAt(0).toUpperCase() + position.slice(1)}`;
+
+    if (positionSetting in adSettings.value && !adSettings.value[positionSetting])
+        return '';
+
+    if (adSettings.value.enableAdSense) {
+        let adSenseSetting = '';
+        switch (position) {
+            case 'header':
+                adSenseSetting = 'adSenseHeaderBanner';
+                break;
+            case 'afterTitle':
+                adSenseSetting = 'adSenseAfterTitle';
+                break;
+            case 'sidebarTop':
+                adSenseSetting = 'adSenseSidebarTop';
+                break;
+            case 'sidebarMid':
+                adSenseSetting = 'adSenseSidebarMid';
+                break;
+            case 'sidebarBottom':
+                adSenseSetting = 'adSenseSidebarBottom';
+                break;
+            case 'sidebarLeft':
+                adSenseSetting = 'adSenseSidebarLeft';
+                break;
+            case 'inContent':
+                adSenseSetting = 'adSenseInArticle';
+                break;
+            case 'belowContent':
+                adSenseSetting = 'adSenseBelowContent';
+                break;
+            default:
+                return '';
+        }
+
+        if (adSenseSetting in adSettings.value && adSettings.value[adSenseSetting]) {
+            return adSettings.value[adSenseSetting];
+        }
+    }
+
+    if (adSettings.value.enableCustomAds) {
+        let customSetting = '';
+        switch (position) {
+            case 'header':
+                customSetting = 'customHeaderBanner';
+                break;
+            case 'sidebarTop':
+                customSetting = 'customSidebarTop';
+                break;
+            case 'sidebarBottom':
+                customSetting = 'customSidebarBottom';
+                break;
+            case 'inContent':
+                customSetting = 'customInArticle';
+                break;
+            case 'belowContent':
+                customSetting = 'customBelowContent';
+                break;
+            default:
+                return '';
+        }
+
+        if (customSetting in adSettings.value && adSettings.value[customSetting]) {
+            return adSettings.value[customSetting];
+        }
+    }
+
+    if (adSettings.value.enableAmazonAds) {
+        switch (position) {
+            case 'sidebarTop':
+                if (adSettings.value.amazonSidebarAd) return adSettings.value.amazonSidebarAd;
+                break;
+            case 'inContent':
+                if (adSettings.value.amazonInContentAd) return adSettings.value.amazonInContentAd;
+                break;
+            case 'belowContent':
+                if (adSettings.value.amazonBelowContentAd) return adSettings.value.amazonBelowContentAd;
+                break;
+        }
+    }
+
+    if (adSettings.value.enableTaboolaAds) {
+        switch (position) {
+            case 'belowContent':
+                if (adSettings.value.taboolaBelowArticle) return adSettings.value.taboolaBelowArticle;
+                break;
+            case 'sidebarTop':
+                if (adSettings.value.taboolaRightRail) return adSettings.value.taboolaRightRail;
+                break;
+            case 'footer':
+                if (adSettings.value.taboolaFooter) return adSettings.value.taboolaFooter;
+                break;
+        }
+    }
+
+    return '';
+};
+
+
+
+// Configurar responsividade
+onMounted(() => {
+    checkScreenSize();
+    window.addEventListener('resize', handleResize);
+});
+
+onBeforeUnmount(() => {
+    window.removeEventListener('resize', handleResize);
+});
+</script>
+
+<style scoped>
+/* Prevenir scroll horizontal - Global */
+* {
+    box-sizing: border-box;
+}
+
+html, body {
+    overflow-x: hidden;
+    max-width: 100vw;
+}
+
+/* Garantir que o container principal nunca ultrapasse */
+.article-container,
+.post-content,
+.featured-img {
+    max-width: 100%;
+    overflow-x: hidden;
+}
+
+/* Forçar quebra de palavra em textos longos */
+h1, h2, h3, h4, h5, h6, p, div, span {
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    hyphens: auto;
+}
+
+.content-with-sidebar {
+    margin-left: 16rem;
+    margin-right: 1rem;
+}
+
+/* Telas muito pequenas - < 700px */
+@media (max-width: 699px) {
+    /* Forçar contenção total */
+    .article-container {
+        padding-left: 0.125rem;
+        padding-right: 0.125rem;
+        max-width: 100vw;
+        overflow-x: hidden;
+    }
+    
+    /* Garantir que nenhum elemento ultrapasse */
+    .post-content :deep(*) {
+        max-width: calc(100vw - 0.5rem) !important;
+        overflow-wrap: break-word !important;
+        word-break: break-word !important;
+    }
+    
+    .post-featured-image {
+        margin-left: -0.125rem;
+        margin-right: -0.125rem;
+        margin-bottom: 0.5rem;
+        border-radius: 0.25rem;
+        max-height: 200px !important;
+    }
+    
+    .post-title {
+        font-size: 1.25rem !important;
+        line-height: 1.2;
+        margin-bottom: 0.375rem !important;
+        font-weight: 700;
+    }
+    
+    .post-content {
+        font-size: 15px;
+        line-height: 1.5;
+        margin-bottom: 0.75rem;
+    }
+    
+    .post-content :deep(h1) {
+        font-size: 1.375rem !important;
+    }
+    
+    .post-content :deep(h2) {
+        font-size: 1.25rem !important;
+    }
+    
+    .post-content :deep(h3) {
+        font-size: 1.125rem !important;
+    }
+    
+    .post-content :deep(p) {
+        margin-bottom: 0.75rem !important;
+    }
+    
+    .post-header {
+        padding-top: 0.375rem !important;
+        padding-bottom: 0.5rem !important;
+    }
+    
+    .post-meta {
+        margin-bottom: 0.25rem;
+    }
+    
+    .author-box {
+        margin-left: -0.125rem;
+        margin-right: -0.125rem;
+        padding: 0.75rem !important;
+        margin-bottom: 1rem !important;
+        background: #ffffff !important;
+        border: 2px solid #e5e5e5 !important;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1) !important;
+    }
+    
+    .dark .author-box {
+        background: #1f2937 !important;
+        border-color: #374151 !important;
+    }
+    
+    .ad-container {
+        padding: 0.25rem !important;
+    }
+    
+    .tags-list a {
+        font-size: 0.625rem !important;
+        padding: 0.25rem 0.5rem !important;
+    }
+    
+    .share-section {
+        padding: 0.75rem 0 !important;
+    }
+    
+    .category-badge {
+        font-size: 0.625rem !important;
+        padding: 0.25rem 0.5rem !important;
+    }
+}
+
+/* Mobile First Optimizations - 640px-699px */
+@media (min-width: 640px) and (max-width: 699px) {
+    .article-container {
+        padding-left: 0.25rem;
+        padding-right: 0.25rem;
+    }
+    
+    .post-featured-image {
+        margin-left: -0.25rem;
+        margin-right: -0.25rem;
+        margin-bottom: 0.75rem;
+        border-radius: 0.375rem;
+    }
+    
+    .post-title {
+        font-size: 1.375rem !important;
+        line-height: 1.25;
+        margin-bottom: 0.5rem !important;
+    }
+    
+    .post-content {
+        font-size: 16px;
+        line-height: 1.6;
+        margin-bottom: 1rem;
+    }
+    
+    .post-header {
+        padding-top: 0.5rem !important;
+        padding-bottom: 0.75rem !important;
+    }
+    
+    .author-box {
+        margin-left: -0.25rem;
+        margin-right: -0.25rem;
+        padding: 0.75rem !important;
+    }
+    
+    .ad-container {
+        padding: 0.5rem !important;
+    }
+}
+
+/* Controle rigoroso de largura para todos os elementos */
+.post-content :deep(*) {
+    max-width: 100%;
+    box-sizing: border-box;
+}
+
+.post-content :deep(img) {
+    max-width: 100%;
+    width: 100%;
+    height: auto;
+    border-radius: 0.5rem;
+    object-fit: cover;
+}
+
+.post-content :deep(iframe) {
+    max-width: 100%;
+    width: 100%;
+}
+
+.post-content :deep(table) {
+    max-width: 100%;
+    width: 100%;
+    overflow-x: auto;
+    display: block;
+    white-space: nowrap;
+}
+
+.post-content :deep(pre) {
+    max-width: 100%;
+    overflow-x: auto;
+    white-space: pre-wrap;
+    word-break: break-all;
+}
+
+.post-content :deep(code) {
+    white-space: pre-wrap;
+    word-break: break-word;
+    max-width: 100%;
+    overflow-wrap: break-word;
+}
+
+.post-content :deep(p), 
+.post-content :deep(div),
+.post-content :deep(span) {
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    hyphens: auto;
+}
+
+/* Elementos que podem causar overflow */
+.post-content :deep(blockquote),
+.post-content :deep(figure),
+.post-content :deep(video) {
+    max-width: 100%;
+    overflow: hidden;
+}
+
+.featured-img {
+    width: 100%;
+    max-height: 500px;
+    object-fit: cover;
+    border-radius: 4px;
+}
+
+.post-title {
+    word-wrap: break-word;
+    hyphens: auto;
+}
+
+.tags-list {
+    overflow-x: auto;
+    padding-bottom: 4px;
+}
+
+/* Melhor responsividade para anúncios */
+.ad-container {
+    width: 100%;
+    overflow: visible;
+}
+
+.ad-placeholder {
+    min-height: 90px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Melhor espaçamento para desktop com sidebar de navegação */
+@media (min-width: 1690px) {
+    .article-container {
+        padding-left: 2rem;
+        padding-right: 2rem;
+    }
+}
+
+/* Correção do texto em itálico */
+.post-content :deep(*) {
+    font-style: normal !important;
+}
+
+.post-content :deep(p),
+.post-content :deep(div),
+.post-content :deep(span),
+.post-content :deep(h1),
+.post-content :deep(h2),
+.post-content :deep(h3),
+.post-content :deep(h4),
+.post-content :deep(h5),
+.post-content :deep(h6) {
+    font-style: normal !important;
+}
+
+/* Permitir itálico apenas em elementos específicos que devem estar em itálico */
+.post-content :deep(em),
+.post-content :deep(i) {
+    font-style: italic !important;
+}
+</style>
