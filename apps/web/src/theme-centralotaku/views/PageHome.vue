@@ -282,7 +282,7 @@
                                 </h2>
                                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                                     <PopularPostCard
-                                        v-for="post in popularPosts.slice(0, 4)"
+                                        v-for="post in popularPosts"
                                         :key="post.id"
                                         :post="post"
                                     />
