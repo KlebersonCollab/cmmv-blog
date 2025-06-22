@@ -1,5 +1,5 @@
-<!doctype html>
-<html lang="en" prefix="og: http://ogp.me/ns#" prefix="og: https://ogp.me/ns#" class="dark">
+<!DOCTYPE html>
+<html lang="pt-BR" prefix="og: https://ogp.me/ns#" class="dark">
     <head>
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -8,7 +8,16 @@
         <link rel="dns-prefetch" href="//fonts.googleapis.com" />
         <link rel="dns-prefetch" href="//cdn.jsdelivr.net" />
         <custom-css />
-
+        <!-- Configuração do Google Analytics para cookies de primeiro nível -->
+        <script>
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
+            gtag('config', 'YNEK9D7QSQ', {
+                'cookie_domain': window.location.hostname,
+                'cookie_flags': 'SameSite=None;Secure'
+            });
+        </script>
     </head>
     <body class="bg-neutral-50 dark:bg-neutral-900 overflow-x-hidden">
         <div id="app"></div>
@@ -17,7 +26,6 @@
         <script>
             (adsbygoogle = window.adsbygoogle || []).push({});
         </script>
-
 
         <analytics />
         <custom-js />

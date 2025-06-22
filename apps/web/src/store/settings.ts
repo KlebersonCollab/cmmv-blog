@@ -111,7 +111,10 @@ export const useSettingsStore = defineStore('settings', {
                         window.dataLayer = window.dataLayer || [];
                         function gtag(){dataLayer.push(arguments);}
                         gtag('js', new Date());
-                        gtag('config', '${gaId}');
+                        gtag('config', '${gaId}', {
+                            'cookie_domain': window.location.hostname,
+                            'cookie_flags': 'SameSite=None;Secure'
+                        });
                     `,
                     type: 'text/javascript'
                 },
