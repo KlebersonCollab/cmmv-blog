@@ -185,23 +185,20 @@ export class PostsPublicService {
         if(queries.status !== "published" && queries.status !== "" && queries.status !== undefined && !admin)
             throw new Error("The status must be one of the following: published");
 
-        let sortOptions = {
-            sortBy: "publishedAt",
-            sort: "DESC"
-        };
-
-        if (!queries.status || queries.status === "") {
-            sortOptions = {
-                sortBy: "status",
-                sort: "ASC"
-            };
-        }
-
-        const posts = await Repository.findAll(PostsEntity, {
+        const findQuery: any = {
             ...queries,
             type: "post",
-            deleted: false
-        }, [], {
+            deleted: false,
+            status: "published"
+        };
+
+        if (queries.category) {
+            findQuery.searchField = 'categories';
+            findQuery.search = queries.category;
+            delete findQuery.category;
+        }
+
+        const posts = await Repository.findAll(PostsEntity, findQuery, [], {
             select: [
                 "id", "title", "slug", "content", "status", "autoPublishAt",
                 "authors", "author", "featureImage", "publishedAt",

@@ -233,9 +233,12 @@
                 <div class="flex-grow">
                     <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
                         <div class="lg:col-span-2">
-                            <h2 class="text-xl font-bold mb-6 pb-2 text-[#ed1c24] border-b-2 border-gray-200">
-                                Últimas Notícias
-                            </h2>
+                            <div class="flex flex-wrap items-center justify-between mb-6 border-b-2 border-gray-200 pb-2">
+                                <h2 class="text-xl font-bold text-[#ed1c24]">
+                                    <span v-if="!selectedCategory">Últimas Notícias</span>
+                                    <span v-else>Exibindo: {{ selectedCategoryName }}</span>
+                                </h2>
+                            </div>
 
                             <div class="flex flex-wrap gap-2 mb-6">
                                 <button @click="selectedCategory = null" :class="[
@@ -244,7 +247,7 @@
                                 ]">
                                     Todas
                                 </button>
-                                <button v-for="category in mainNavCategories.rootCategories" :key="category.id" @click="selectedCategory = category.id" :class="[
+                                <button v-for="category in allRootCategoriesWithPosts" :key="category.id" @click="selectedCategory = category.id" :class="[
                                     'px-4 py-2 text-sm font-medium rounded-full transition-colors',
                                     selectedCategory === category.id ? 'bg-[#ed1c24] text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
                                 ]">
@@ -252,54 +255,68 @@
                                 </button>
                             </div>
 
-                            <div v-if="latestPostsToDisplay.length > 0" class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                <PostCard
-                                    v-for="post in latestPostsToDisplay"
-                                    :key="post.id"
-                                    :post="post"
-                                />
-                            </div>
-                             <div v-else class="text-center py-10 text-gray-600">
-                                <p>Nenhum post encontrado nesta categoria.</p>
-                            </div>
-
-                            <!-- Mid-content AdSense Banner -->
-                            <div v-if="adSettings.enableAds" class="w-full bg-gray-100 rounded-lg my-8 overflow-hidden flex justify-center">
-                                <div class="ad-container ad-banner-mid py-2 px-4" v-if="getAdHtml('inContent')">
-                                    <div v-html="getAdHtml('inContent')"></div>
+                            <!-- Layout Padrão (Sem Filtro) -->
+                            <div v-if="!selectedCategory">
+                                <div v-if="latestPostsToDisplay.length > 0" class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <PostCard
+                                        v-for="post in latestPostsToDisplay"
+                                        :key="post.id"
+                                        :post="post"
+                                    />
                                 </div>
-                                <div class="ad-container ad-banner-mid py-2 px-4" v-else>
-                                    <div class="ad-placeholder h-[90px] w-full max-w-[728px] bg-gray-200 flex items-center justify-center text-gray-400 text-sm">
-                                        <span>Anúncio</span>
+                                <div v-else class="text-center py-10 text-gray-600">
+                                    <p>Nenhum post encontrado.</p>
+                                </div>
+
+                                <div v-if="adSettings.enableAds" class="w-full bg-gray-100 rounded-lg my-8 overflow-hidden flex justify-center">
+                                    <div class="ad-container ad-banner-mid py-2 px-4" v-if="getAdHtml('inContent')">
+                                        <div v-html="getAdHtml('inContent')"></div>
+                                    </div>
+                                    <div class="ad-container ad-banner-mid py-2 px-4" v-else>
+                                        <div class="ad-placeholder h-[90px] w-full max-w-[728px] bg-gray-200 flex items-center justify-center text-gray-400 text-sm">
+                                            <span>Anúncio</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div v-if="popularPosts.length > 0">
+                                    <h2 class="text-xl font-bold mb-6 pb-2 text-[#ed1c24] border-b-2 border-gray-200">
+                                        Mais Populares
+                                    </h2>
+                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                        <PopularPostCard
+                                            v-for="post in popularPosts"
+                                            :key="post.id"
+                                            :post="post"
+                                        />
+                                    </div>
+                                </div>
+
+                                <div v-if="moreContentPosts.length > 0">
+                                    <h2 class="text-xl font-bold mt-8 mb-6 pb-2 text-[#ed1c24] border-b-2 border-gray-200">
+                                        Mais Conteúdo
+                                    </h2>
+                                    <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                                        <PostCard
+                                            v-for="post in moreContentPosts"
+                                            :key="post.id"
+                                            :post="post"
+                                        />
                                     </div>
                                 </div>
                             </div>
-                            
-                            <!-- Popular Posts Section -->
-                            <div v-if="popularPosts.length > 0">
-                                <h2 class="text-xl font-bold mb-6 pb-2 text-[#ed1c24] border-b-2 border-gray-200">
-                                    Mais Populares
-                                </h2>
-                                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                    <PopularPostCard
-                                        v-for="post in popularPosts"
+
+                            <!-- Layout com Filtro Ativo -->
+                            <div v-else>
+                                <div v-if="posts.length > 0" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                                    <PostCard
+                                        v-for="post in posts"
                                         :key="post.id"
                                         :post="post"
                                     />
                                 </div>
-                            </div>
-
-                            <div v-if="moreContentPosts.length > 0">
-                                <h2 class="text-xl font-bold mt-8 mb-6 pb-2 text-[#ed1c24] border-b-2 border-gray-200">
-                                    Mais Conteúdo
-                                </h2>
-
-                                <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-                                    <PostCard
-                                        v-for="post in moreContentPosts"
-                                        :key="post.id"
-                                        :post="post"
-                                    />
+                                <div v-else class="text-center py-10 text-gray-600">
+                                    <p>Nenhum post encontrado nesta categoria.</p>
                                 </div>
                             </div>
 
@@ -336,7 +353,7 @@
                                 </div>
                             </div>
 
-                            <CategoryWidget :categories="categories" />
+                            <!-- <CategoryWidget :categories="categories" /> -->
 
                             <!-- AdSense Rectangle (Middle) -->
                             <div class="bg-gray-100 rounded-lg p-2 mb-6 flex justify-center h-[400px]">
@@ -441,21 +458,22 @@ const mainNavCategories = computed(() => {
     };
 });
 
-const filteredPosts = computed(() => {
-    if (!selectedCategory.value) {
-        return posts.value;
-    }
-    return posts.value.filter(post => 
-        post.categories && post.categories.some(cat => cat.id === selectedCategory.value)
-    );
+const allRootCategoriesWithPosts = computed(() => {
+    return categories.value?.filter((cat: any) => !cat.parentCategory && cat.postCount > 0) || [];
+});
+
+const selectedCategoryName = computed(() => {
+    if (!selectedCategory.value) return '';
+    const category = categories.value.find(cat => cat.id === selectedCategory.value);
+    return category ? category.name : '';
 });
 
 const latestPostsToDisplay = computed(() => {
-    return filteredPosts.value.slice(featuredPost.value ? 1 : 0, featuredPost.value ? 5 : 4);
+    return posts.value.slice(0, 4);
 });
 
 const moreContentPosts = computed(() => {
-    return filteredPosts.value.slice(featuredPost.value ? 5 : 4);
+    return posts.value.slice(4);
 });
 
 const adPluginSettings = computed(() => {
@@ -667,10 +685,20 @@ const loadMorePosts = async () => {
         loadingMore.value = true;
         currentPage.value++;
 
-        const response: any = await blogAPI.posts.getAll(posts.value.length);
+        const filters: any = { offset: posts.value.length };
+        if (selectedCategory.value) {
+            filters.category = selectedCategory.value;
+        }
+
+        const response: any = await blogAPI.posts.getAll(filters);
 
         if (response && response.posts && response.posts.length > 0) {
-            posts.value = [...posts.value, ...response.posts];
+            const existingIds = new Set(posts.value.map(p => p.id));
+            const newPosts = response.posts.filter((post: any) => !existingIds.has(post.id));
+
+            if (newPosts.length > 0) {
+                posts.value = [...posts.value, ...newPosts];
+            }
 
             pagination.value = {
                 total: response.meta?.pagination?.total || 0,
@@ -731,6 +759,34 @@ onUnmounted(() => {
     }
 
     stopCarouselInterval();
+});
+
+watch(selectedCategory, async (newCategory) => {
+    loading.value = true;
+    error.value = null;
+    currentPage.value = 0;
+
+    try {
+        const filters: any = { offset: 0 };
+        if (newCategory) {
+            filters.category = newCategory;
+        }
+
+        const response: any = await blogAPI.posts.getAll(filters);
+
+        if (response && response.posts) {
+            posts.value = response.posts;
+            hasMorePosts.value = posts.value.length < response.count;
+        } else {
+            posts.value = [];
+            hasMorePosts.value = false;
+        }
+    } catch (err: any) {
+        console.error('Failed to load filtered posts:', err);
+        error.value = err;
+    } finally {
+        loading.value = false;
+    }
 });
 
 watch(() => settings.value['blog.cover'], () => {

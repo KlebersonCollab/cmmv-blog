@@ -291,16 +291,22 @@ export const useBlog = () => {
     };
 
     const posts = {
-        getAll: async (offset: number = 0) => {
-            const urlQueries = new URLSearchParams({
+        getAll: async (filters: { offset?: number; category?: string } = {}) => {
+            const params = new URLSearchParams({
                 limit: "32",
                 status: "published",
-                sort: "ASC",
+                sort: "DESC",
                 sortBy: "publishedAt",
-                offset: offset.toString()
-            }).toString();
+                offset: (filters.offset || 0).toString()
+            });
 
-            const { data } = await api.get<any[]>(`blog/posts/public?${urlQueries}`, "posts");
+            if (filters.category) {
+                params.append('category', filters.category);
+            }
+
+            const cacheKey = `posts-public:${JSON.stringify(filters)}`;
+
+            const { data } = await api.get<any[]>(`blog/posts/public?${params.toString()}`, cacheKey);
             return data.value || [];
         },
         search: async (query: string) => {

@@ -405,13 +405,23 @@
                                 </div>
 
                                 <!-- Popular Posts Widget -->
-                                <div v-if="popularPosts && popularPosts.length > 0" class="bg-white rounded-lg shadow-md p-5 mb-6 hidden md:block">
+                                <div v-if="filteredPopularPosts.length > 0" class="bg-white rounded-lg shadow-md p-5 mb-6 hidden md:block">
                                     <h2 class="text-xl font-bold mb-4 pb-2 text-[#ed1c24] border-b-2 border-gray-200">
                                         Mais Populares
                                     </h2>
 
-                                    <div class="flex flex-col gap-6 mt-4">
-                                        <PostCard v-for="post in popularPosts.slice(0, 4)" :key="post.id" :post="post" />
+                                    <div class="flex flex-col gap-4 mt-4">
+                                        <div v-for="p in filteredPopularPosts" :key="p.id" class="flex items-center gap-4">
+                                            <a :href="`/post/${p.slug}`" class="flex-shrink-0">
+                                                <img :src="p.image" :alt="p.title" class="w-20 h-20 object-cover rounded-lg">
+                                            </a>
+                                            <div class="flex-1">
+                                                <h3 class="text-sm font-semibold text-gray-800 hover:text-[#ed1c24] transition-colors line-clamp-2">
+                                                    <a :href="`/post/${p.slug}`">{{ p.title }}</a>
+                                                </h3>
+                                                <p class="text-xs text-gray-500 mt-1">{{ formatDate(p.publishedAt || p.updatedAt) }}</p>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
 
@@ -453,7 +463,6 @@ import { vue3 } from '@cmmv/blog/client'
 import { formatDate, stripHtml } from '../../composables/useUtils'
 import CommentSection from '../../components/CommentSection.vue'
 import OptimizedImage from '../../components/OptimizedImage.vue'
-import PostCard from '../components/PostCard.vue'
 import CategoryWidget from '../components/CategoryWidget.vue'
 import { useSettingsStore } from '../../store/settings';
 import { usePostsStore } from '../../store/posts';
@@ -478,6 +487,14 @@ const post = ref<any>(null)
 const categories = ref<any[]>(categoriesStore.getCategories || []);
 const popularPosts = ref<any[]>(mostAccessedPostsStore.getMostAccessedPosts || []);
 const isSSR = import.meta.env.SSR
+
+const filteredPopularPosts = computed(() => {
+    if (!popularPosts.value || !post.value) {
+        return [];
+    }
+    // Filter out the current post and take the first 4
+    return popularPosts.value.filter(p => p.id !== post.value.id).slice(0, 4);
+});
 
 if(!isSSR)
     post.value = window.__CMMV_DATA__["post"]
