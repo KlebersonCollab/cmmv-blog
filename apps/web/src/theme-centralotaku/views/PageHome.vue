@@ -657,7 +657,7 @@ const loadPosts = async () => {
         loading.value = true;
         error.value = null;
 
-        const response: any = await blogAPI.posts.getAll(currentPage.value * pagination.value.limit);
+        const response: any = await blogAPI.posts.getAll({ offset: currentPage.value * pagination.value.limit });
 
         if (response) {
             posts.value = response.posts;
