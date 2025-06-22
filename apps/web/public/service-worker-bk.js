@@ -2,7 +2,10 @@ importScripts("https://storage.googleapis.com/workbox-cdn/releases/6.5.4/workbox
 
 const {
     registerRoute,
-    setCatchHandler
+    NavigationRoute,
+    Route,
+    setCatchHandler,
+    setDefaultHandler
 } = workbox.routing;
 const {
     CacheFirst,
@@ -28,26 +31,7 @@ self.addEventListener("install", e => {
 });
 clientsClaim();
 
-// Intercepta requisições e ignora ads
-self.addEventListener('fetch', event => {
-    const url = event.request.url;
-    
-    // Ignora requisições de ads completamente
-    if (AD_DOMAINS.some(domain => url.includes(domain))) {
-        // Retorna uma resposta vazia para evitar erros
-        event.respondWith(
-            new Response('', {
-                status: 204,
-                statusText: 'No Content'
-            })
-        );
-        return;
-    }
-    
-    // Para outras requisições, deixa o Workbox lidar
-});
-
-const VERSION = "v0.1.1";
+const VERSION = "v0.1.2"; // Incrementado para forçar atualização
 
 const CACHE_NAMES = {
     ASSETS: "assets-cache-" + VERSION,
@@ -76,7 +60,8 @@ const AD_DOMAINS = [
     'pangle.com',
     'pangle.cn',
     'pangle.com.cn',
-    'pangle.com.cn',
+    'sodar',
+    'pagead'
 ];
 
 const assetsExpirationPlugin = new ExpirationPlugin({
@@ -102,6 +87,23 @@ const lastVisitedStoresExpirationPlugin = new ExpirationPlugin({
     maxAgeSeconds: 60,
     purgeOnQuotaError: true
 });
+
+// Primeiro registramos uma rota específica para bloquear anúncios
+// Isso deve ser feito antes de qualquer outra rota
+registerRoute(
+    ({ url }) => isAdRequest(url.href),
+    async () => {
+        return new Response('', {
+            status: 204,
+            statusText: 'Ad Blocked by Service Worker'
+        });
+    }
+);
+
+// Helper para verificar se é uma requisição de anúncio
+function isAdRequest(url) {
+    return AD_DOMAINS.some(domain => url.includes(domain));
+}
 
 // ⚡️ Cache imagens
 registerRoute(
@@ -144,12 +146,31 @@ registerRoute(ROUTE_REGEX.LAST_VISITED, new CacheFirst({
     plugins: [lastVisitedStoresExpirationPlugin]
 }));
 
+// Intercepta requisições e ignora ads (interceptor global como fallback)
+self.addEventListener('fetch', event => {
+    const url = event.request.url;
+    
+    // Se já existe uma rota para esta URL, não fazemos nada aqui
+    // Deixe o Workbox lidar com isso
+    
+    // Ignora requisições de ads como fallback
+    if (isAdRequest(url)) {
+        // Retorna uma resposta vazia para evitar erros
+        event.respondWith(
+            new Response('', {
+                status: 204,
+                statusText: 'No Content'
+            })
+        );
+    }
+});
+
 // Captura erros de requisições não tratadas
 setCatchHandler(({ event }) => {
     const url = event.request.url;
     
     // Se for uma requisição de ad que escapou, retorna resposta vazia
-    if (AD_DOMAINS.some(domain => url.includes(domain))) {
+    if (isAdRequest(url)) {
         return new Response('', {
             status: 204,
             statusText: 'Ad Blocked'
