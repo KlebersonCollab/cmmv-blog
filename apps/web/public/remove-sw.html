@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Remover Service Worker</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        .container {
+            background-color: #f5f5f5;
+            border-radius: 8px;
+            padding: 20px;
+            margin-top: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        button {
+            background-color: #4CAF50;
+            border: none;
+            color: white;
+            padding: 10px 15px;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 16px;
+            margin: 4px 2px;
+            cursor: pointer;
+            border-radius: 4px;
+        }
+        .success {
+            color: #4CAF50;
+            font-weight: bold;
+        }
+        .error {
+            color: #f44336;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <h1>Remover Service Worker</h1>
+    <div class="container">
+        <p>Esta página vai remover o service worker do seu navegador.</p>
+        <p>Os service workers são scripts que seu navegador executa em segundo plano para melhorar o desempenho do site, mas também podem causar problemas se não estiverem configurados corretamente.</p>
+        
+        <button onclick="unregisterServiceWorker()">Remover Service Worker</button>
+        
+        <div id="status"></div>
+    </div>
+
+    <script>
+        function unregisterServiceWorker() {
+            const statusElement = document.getElementById('status');
+            
+            if (!('serviceWorker' in navigator)) {
+                statusElement.innerHTML = '<p class="error">Este navegador não suporta service workers.</p>';
+                return;
+            }
+            
+            statusElement.innerHTML = '<p>Removendo service worker...</p>';
+            
+            navigator.serviceWorker.getRegistrations().then(function(registrations) {
+                if (registrations.length === 0) {
+                    statusElement.innerHTML = '<p>Nenhum service worker encontrado para remover.</p>';
+                    return;
+                }
+                
+                let removed = 0;
+                for (let registration of registrations) {
+                    registration.unregister().then(function(success) {
+                        removed++;
+                        if (success) {
+                            if (removed === registrations.length) {
+                                // Limpar caches
+                                caches.keys().then(function(cacheNames) {
+                                    return Promise.all(
+                                        cacheNames.map(function(cacheName) {
+                                            return caches.delete(cacheName);
+                                        })
+                                    );
+                                }).then(function() {
+                                    statusElement.innerHTML = '<p class="success">Service worker removido com sucesso! Todos os caches foram limpos.</p>' +
+                                        '<p>Você pode fechar esta página e voltar ao site normalmente.</p>';
+                                });
+                            }
+                        } else {
+                            statusElement.innerHTML = '<p class="error">Falha ao remover o service worker. Por favor, tente limpar os dados do navegador manualmente.</p>';
+                        }
+                    });
+                }
+            }).catch(function(error) {
+                statusElement.innerHTML = '<p class="error">Erro ao remover service worker: ' + error + '</p>';
+            });
+        }
+    </script>
+</body>
+</html> 
