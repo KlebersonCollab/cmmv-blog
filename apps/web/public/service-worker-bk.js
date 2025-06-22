@@ -31,7 +31,7 @@ self.addEventListener("install", e => {
 });
 clientsClaim();
 
-const VERSION = "v0.1.2"; // Incrementado para forçar atualização
+const VERSION = "v0.1.3"; // Incrementado para forçar atualização
 
 const CACHE_NAMES = {
     ASSETS: "assets-cache-" + VERSION,
@@ -47,22 +47,6 @@ const ROUTE_REGEX = {
     COUPONS: /(?:\?|&)c=(\d+)(?:&|#|$)/,
     LAST_VISITED: /.*(?:static\.com\.br\/widget\/lastvisitedstores)/,
 };
-
-// URLs de ads para ignorar
-const AD_DOMAINS = [
-    'adtrafficquality.google',
-    'googleadservices.com',
-    'googlesyndication.com',
-    'doubleclick.net',
-    'pswec.com',
-    'adsystem.com',
-    'pangle.io',
-    'pangle.com',
-    'pangle.cn',
-    'pangle.com.cn',
-    'sodar',
-    'pagead'
-];
 
 const assetsExpirationPlugin = new ExpirationPlugin({
     maxEntries: 100,
@@ -87,23 +71,6 @@ const lastVisitedStoresExpirationPlugin = new ExpirationPlugin({
     maxAgeSeconds: 60,
     purgeOnQuotaError: true
 });
-
-// Primeiro registramos uma rota específica para bloquear anúncios
-// Isso deve ser feito antes de qualquer outra rota
-registerRoute(
-    ({ url }) => isAdRequest(url.href),
-    async () => {
-        return new Response('', {
-            status: 204,
-            statusText: 'Ad Blocked by Service Worker'
-        });
-    }
-);
-
-// Helper para verificar se é uma requisição de anúncio
-function isAdRequest(url) {
-    return AD_DOMAINS.some(domain => url.includes(domain));
-}
 
 // ⚡️ Cache imagens
 registerRoute(
@@ -146,38 +113,9 @@ registerRoute(ROUTE_REGEX.LAST_VISITED, new CacheFirst({
     plugins: [lastVisitedStoresExpirationPlugin]
 }));
 
-// Intercepta requisições e ignora ads (interceptor global como fallback)
-self.addEventListener('fetch', event => {
-    const url = event.request.url;
-    
-    // Se já existe uma rota para esta URL, não fazemos nada aqui
-    // Deixe o Workbox lidar com isso
-    
-    // Ignora requisições de ads como fallback
-    if (isAdRequest(url)) {
-        // Retorna uma resposta vazia para evitar erros
-        event.respondWith(
-            new Response('', {
-                status: 204,
-                statusText: 'No Content'
-            })
-        );
-    }
-});
-
 // Captura erros de requisições não tratadas
 setCatchHandler(({ event }) => {
-    const url = event.request.url;
-    
-    // Se for uma requisição de ad que escapou, retorna resposta vazia
-    if (isAdRequest(url)) {
-        return new Response('', {
-            status: 204,
-            statusText: 'Ad Blocked'
-        });
-    }
-    
-    // Para outros erros, retorna página offline se disponível
+    // Para erros, retorna página offline se disponível
     return caches.match('/offline.html') || new Response('Offline', {
         status: 503,
         statusText: 'Service Unavailable'
