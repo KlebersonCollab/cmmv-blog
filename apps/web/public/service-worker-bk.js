@@ -28,7 +28,19 @@ self.addEventListener("install", e => {
 });
 clientsClaim();
 
-const VERSION = "v0.0.9";
+// Intercepta requisições e ignora ads
+self.addEventListener('fetch', event => {
+    const url = event.request.url;
+    
+    // Ignora requisições de ads
+    if (AD_DOMAINS.some(domain => url.includes(domain))) {
+        return; // Não faz cache nem tenta interceptar
+    }
+    
+    // Para outras requisições, deixa o Workbox lidar
+});
+
+const VERSION = "v0.1.0";
 
 const CACHE_NAMES = {
     ASSETS: "assets-cache-" + VERSION,
@@ -44,6 +56,16 @@ const ROUTE_REGEX = {
     COUPONS: /(?:\?|&)c=(\d+)(?:&|#|$)/,
     LAST_VISITED: /.*(?:static\.com\.br\/widget\/lastvisitedstores)/,
 };
+
+// URLs de ads para ignorar
+const AD_DOMAINS = [
+    'adtrafficquality.google',
+    'googleadservices.com',
+    'googlesyndication.com',
+    'doubleclick.net',
+    'pswec.com',
+    'adsystem.com'
+];
 
 const assetsExpirationPlugin = new ExpirationPlugin({
     maxEntries: 100,
