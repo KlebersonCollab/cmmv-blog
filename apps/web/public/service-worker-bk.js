@@ -32,15 +32,22 @@ clientsClaim();
 self.addEventListener('fetch', event => {
     const url = event.request.url;
     
-    // Ignora requisições de ads
+    // Ignora requisições de ads completamente
     if (AD_DOMAINS.some(domain => url.includes(domain))) {
-        return; // Não faz cache nem tenta interceptar
+        // Retorna uma resposta vazia para evitar erros
+        event.respondWith(
+            new Response('', {
+                status: 204,
+                statusText: 'No Content'
+            })
+        );
+        return;
     }
     
     // Para outras requisições, deixa o Workbox lidar
 });
 
-const VERSION = "v0.1.0";
+const VERSION = "v0.1.1";
 
 const CACHE_NAMES = {
     ASSETS: "assets-cache-" + VERSION,
@@ -64,7 +71,12 @@ const AD_DOMAINS = [
     'googlesyndication.com',
     'doubleclick.net',
     'pswec.com',
-    'adsystem.com'
+    'adsystem.com',
+    'pangle.io',
+    'pangle.com',
+    'pangle.cn',
+    'pangle.com.cn',
+    'pangle.com.cn',
 ];
 
 const assetsExpirationPlugin = new ExpirationPlugin({
@@ -131,6 +143,25 @@ registerRoute(ROUTE_REGEX.LAST_VISITED, new CacheFirst({
     cacheName: CACHE_NAMES.LAST_VISITED,
     plugins: [lastVisitedStoresExpirationPlugin]
 }));
+
+// Captura erros de requisições não tratadas
+setCatchHandler(({ event }) => {
+    const url = event.request.url;
+    
+    // Se for uma requisição de ad que escapou, retorna resposta vazia
+    if (AD_DOMAINS.some(domain => url.includes(domain))) {
+        return new Response('', {
+            status: 204,
+            statusText: 'Ad Blocked'
+        });
+    }
+    
+    // Para outros erros, retorna página offline se disponível
+    return caches.match('/offline.html') || new Response('Offline', {
+        status: 503,
+        statusText: 'Service Unavailable'
+    });
+});
 
 // 🎯 Mensagens
 self.addEventListener("message", e => {
