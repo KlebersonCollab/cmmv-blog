@@ -167,9 +167,6 @@ export class OddsSyncCountriesService {
             if (!processedUrl)
                 throw new Error("Failed to process image with MediasService");
 
-            console.log(`[DEBUG] Attempting to update country. ID: ${countryId}`);
-            console.log(`[DEBUG] New processedFlagUrl: ${processedUrl}`);
-
             const updateResult = await Repository.updateOne(OddsCountriesEntity, { id: countryId }, {
                 flagProcessed: true,
                 processedFlagUrl: processedUrl,

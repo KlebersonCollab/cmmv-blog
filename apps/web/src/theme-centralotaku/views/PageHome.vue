@@ -443,11 +443,8 @@ const loadReviewPosts = async () => {
             const response: any = await blogAPI.posts.getAll(filters);
             if (response && response.posts) {
                 reviewPosts.value = response.posts;
-                console.log(`[Debug] Posts for category "${reviewCategory.name}" loaded:`, response.posts);
             }
-    } else {
-             console.log('[Debug] Categoria de Análise não encontrada, a seção não será exibida.');
-        }
+    } 
     } catch (err) {
         console.error('Failed to load review posts:', err);
     }

@@ -121,7 +121,6 @@ onMounted(async () => {
     loading.value = true;
     try {
         const response = await blogAPI.categories.getBySlug(route.params.slug as string);
-        console.log(response);
         if (response) {
             category.value = response.category;
             posts.value = response.posts?.data || [];
