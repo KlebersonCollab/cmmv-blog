@@ -41,6 +41,7 @@ export default defineConfig(({ mode }) => {
             noExternal: [],
         },
         build: {
+            sourcemap: true,
             minify: 'terser',
             outDir: 'dist',
             rollupOptions: {

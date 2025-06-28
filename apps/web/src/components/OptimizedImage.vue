@@ -157,12 +157,15 @@ const imageClasses = computed(() => {
         'imgix-lazy'
     ];
 
-    if (props.transition) {
-        baseClasses.push('transition-transform duration-300');
-    }
+    // Apply transitions only to lazy-loaded images to avoid affecting LCP
+    if (props.loading === 'lazy') {
+        if (props.transition) {
+            baseClasses.push('transition-transform duration-300');
+        }
 
-    if (props.hover) {
-        baseClasses.push('hover:scale-105');
+        if (props.hover) {
+            baseClasses.push('hover:scale-105');
+        }
     }
 
     if (props.classes) {

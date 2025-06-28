@@ -144,7 +144,8 @@
 <script setup lang="ts">
 import {
     ref, computed, onMounted,
-    onUnmounted, watch, nextTick, provide
+    onUnmounted, watch, nextTick, provide,
+    defineAsyncComponent
 } from 'vue';
 import { useHead } from '@unhead/vue';
 import { vue3 } from '@cmmv/blog/client';
@@ -158,8 +159,9 @@ import PostCard from '../components/PostCard.vue';
 import CategoryWidget from '../components/CategoryWidget.vue';
 import PopularPostCard from '../components/PopularPostCard.vue';
 import CoverSection from '../components/CoverSection.vue';
-import CategorySection from '../components/CategorySection.vue';
-import PostFeed from '../components/PostFeed.vue';
+
+const CategorySection = defineAsyncComponent(() => import('../components/CategorySection.vue'));
+const PostFeed = defineAsyncComponent(() => import('../components/PostFeed.vue'));
 
 declare global {
     interface Window {
@@ -372,20 +374,70 @@ const prevCarouselSlide = () => {
     startCarouselInterval();
 };
 
-const headData = ref({
-    title: settings.value.title,
-    meta: [
-        { name: 'description', content: settings.value.description },
-        { name: 'keywords', content: settings.value.keywords },
-        { property: 'og:type', content: 'website' },
-        { property: 'og:title', content: settings.value.title },
-        { property: 'og:description', content: settings.value.description },
-        { property: 'og:image', content: settings.value.logo }
-    ],
-    link: [
+const generateCloudflareImageUrl = (originalUrl: string, width: number, fit: string = 'cover', quality: number = 75, format: string = 'auto'): string => {
+    try {
+        const cfParams = `width=${width},quality=${quality},format=${format},fit=${fit}`;
+        const cfPrefix = `/cdn-cgi/image/${cfParams}`;
+
+        let url: URL;
+        if (!originalUrl) return '';
+
+        if (originalUrl.startsWith('http')) {
+            url = new URL(originalUrl);
+        } else {
+            const baseUrl = typeof window !== 'undefined' ? window.location.origin : '';
+            url = new URL(originalUrl, baseUrl || 'https://example.com');
+        }
+
+        if (!url.pathname.includes('/cdn-cgi/image/')) {
+            url.pathname = cfPrefix + url.pathname;
+        } else {
+            url.pathname = url.pathname.replace(
+                /\/cdn-cgi\/image\/[^/]+/,
+                cfPrefix
+            );
+        }
+
+        return url.toString();
+    } catch (error) {
+        console.warn('Error generating Cloudflare URL:', error);
+        return originalUrl;
+    }
+};
+
+const headData = computed(() => {
+    const links: any[] = [
         { rel: 'canonical', href: settings.value.url },
         { rel: 'alternate', href: `${settings.value.url}/feed`, type: 'application/rss+xml', title: settings.value.title }
-    ]
+    ];
+
+    const isCloudflareEnabled = rawSettings.value?.['blog.cloudflareImageSrcset'];
+    
+    if (isCloudflareEnabled && posts.value.length > 0 && posts.value[0].featureImage) {
+        const lcpImageSrc = posts.value[0].featureImage;
+        const preloadedUrl = generateCloudflareImageUrl(lcpImageSrc, 1280, 'cover', 75, 'webp');
+        
+        links.push({
+            rel: 'preload',
+            href: preloadedUrl,
+            as: 'image',
+            type: 'image/webp',
+            fetchpriority: 'high'
+        });
+    }
+
+    return {
+        title: settings.value.title,
+        meta: [
+            { name: 'description', content: settings.value.description },
+            { name: 'keywords', content: settings.value.keywords },
+            { property: 'og:type', content: 'website' },
+            { property: 'og:title', content: settings.value.title },
+            { property: 'og:description', content: settings.value.description },
+            { property: 'og:image', content: settings.value.logo }
+        ],
+        link: links
+    };
 });
 
 useHead(headData);
@@ -546,8 +598,12 @@ onMounted(async () => {
     startCarouselInterval();
     loadAdScripts();
     loadSidebarLeftAd(sidebarLeftAdContainer.value);
-    loadReviewPosts();
-    loadPostsForMainCategories();
+
+    // Defer non-critical data fetching to the client-side to improve TTFB
+    if (typeof window !== 'undefined') {
+        loadReviewPosts();
+        loadPostsForMainCategories();
+    }
 
     await nextTick();
 });

@@ -1,11 +1,11 @@
 <template>
     <div class="mt-8">
         <div class="flex items-center justify-between mb-6 border-b-2 border-gray-200 pb-2">
-            <h2 class="text-xl font-bold text-[#ed1c24]">{{ title }}</h2>
+            <h2 class="text-xl font-bold text-[#c4131a]">{{ title }}</h2>
             <router-link
                 v-if="categorySlug"
                 :to="`/category/${categorySlug}`"
-                class="text-sm font-semibold text-white bg-[#ed1c24] px-3 py-1 rounded-md hover:bg-[#c5131a] transition-colors"
+                class="text-sm font-semibold text-white bg-[#990000] px-3 py-1 rounded-md hover:bg-[#7a0000] transition-colors"
             >
                 Ver Todos
             </router-link>

@@ -212,51 +212,45 @@ export class PostsPublicService {
             }
         });
 
-        let authors: any[] = [];
-        let categories: any[] = [];
+        if (posts?.data && posts.data.length > 0) {
+            const authorIds = [...new Set(posts.data.map((p: any) => p.author))].filter(id => id);
+            const categoryIds = [...new Set(posts.data.flatMap((p: any) => p.categories || []))].filter(id => id);
 
-        const categoriesData = await Repository.findAll(CategoriesEntity, {
-            limit: 100
-        }, [], {
-            select: [ "id", "name", "slug", "description" ]
-        });
+            const authorsData = authorIds.length > 0 ? await Repository.findAll(ProfilesEntity, {
+                user: In(authorIds),
+                limit: authorIds.length
+            }, [], {
+                select: [
+                    'id', 'user', 'name', 'slug', 'image', 'coverImage',
+                    'bio', 'website', 'location', 'facebook', 'twitter', 'locale',
+                    'visibility', 'metaTitle', 'metaDescription', 'lastSeen'
+                ]
+            }) : { data: [] };
 
-        const authorsData = await Repository.findAll(ProfilesEntity, {
-            limit: 100
-        }, [], {
-            select: [
-                'id', 'user', 'name', 'slug', 'image', 'coverImage',
-                'bio', 'website', 'location', 'facebook', 'twitter', 'locale',
-                'visibility', 'metaTitle', 'metaDescription', 'lastSeen',
-                'commentNotifications', 'mentionNotifications', 'recommendationNotifications'
-            ]
-        });
+            const categoriesData = categoryIds.length > 0 ? await Repository.findAll(CategoriesEntity, {
+                id: In(categoryIds),
+                limit: categoryIds.length
+            }, [], {
+                select: [ "id", "name", "slug", "description" ]
+            }) : { data: [] };
 
-        if(posts){
-            let userIdsIn: string[] = [];
+            const authorsMap = new Map((authorsData?.data || []).map((a: any) => [a.user, a]));
+            const categoriesMap = new Map((categoriesData?.data || []).map((c: any) => [c.id, c]));
 
             for (const post of posts.data) {
-                if (post.status === 'cron' && post.autoPublishAt)
-                    post.scheduledPublishDate = new Date(post.autoPublishAt).toLocaleString();
-
-                if(post.author !== "current-user-id")
-                    userIdsIn.push(post.author);
-
-                if(post.author)
-                    post.author = authorsData?.data?.find((author: any) => author.user === post.author);
-
-                post.categories = (categoriesData) ? post.categories.map((category: any) =>
-                    categoriesData.data.find((c: any) => c.id === category)
-                ) : [];
+                if (post.author) {
+                    post.author = authorsMap.get(post.author);
+                }
+                if (post.categories) {
+                    post.categories = post.categories.map((catId: any) => categoriesMap.get(catId)).filter(Boolean);
+                }
             }
         }
 
         return {
             posts: (posts) ? posts.data : [],
             count: (posts) ? posts.count : 0,
-            pagination: (posts) ? posts.pagination : null,
-            authors: authorsData?.data,
-            categories: categoriesData?.data
+            pagination: (posts) ? posts.pagination : null
         };
     }
 

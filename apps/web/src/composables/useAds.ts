@@ -193,7 +193,11 @@ export const useAds = (settings: any, page = 'generic') => {
     };
 
     const loadAdScripts = () => {
-        if (adSettings.value.enableAds) {
+        if (!adSettings.value.enableAds || typeof window === 'undefined') {
+            return;
+        }
+
+        const doLoad = () => {
             if (adSettings.value.enableAdSense && adSettings.value.enableAdSenseAutoAds && adSettings.value.adSenseAutoAdsCode) {
                 const existingScript = document.getElementById('adsense-script');
                 if (!existingScript) {
@@ -211,7 +215,9 @@ export const useAds = (settings: any, page = 'generic') => {
                             script.crossOrigin = "anonymous";
                             head.appendChild(script);
                         }
-                    } catch (e) {}
+                    } catch (e) {
+                        console.error("Failed to load AdSense script:", e);
+                    }
                 }
             }
 
@@ -223,10 +229,25 @@ export const useAds = (settings: any, page = 'generic') => {
                                 (window.adsbygoogle = window.adsbygoogle || []).push({});
                             }
                         });
-                    } catch (e) {}
+                    } catch (e) {
+                        console.error("Failed to push ads:", e);
+                    }
                 }, 300);
             }
-        }
+        };
+
+        // Defer loading script
+        let hasLoaded = false;
+        const loadOnce = () => {
+            if (!hasLoaded) {
+                hasLoaded = true;
+                doLoad();
+                window.removeEventListener('scroll', loadOnce);
+            }
+        };
+
+        // Load only on first scroll to avoid blocking main thread on initial load
+        window.addEventListener('scroll', loadOnce, { once: true });
     };
 
     const loadSidebarLeftAd = (containerRef: HTMLElement | null) => {

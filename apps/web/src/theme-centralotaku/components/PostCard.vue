@@ -8,8 +8,6 @@
           width="360"
           height="192"
           loading="eager"
-          preload="true"
-          fetchpriority="high"
           priority="high"
           :hover="true"
           icon-size="md"
@@ -35,7 +33,7 @@
         </p>
       </a>
       <div class="mt-auto">
-        <a :href="`/post/${post.slug}`" class="text-sm font-semibold text-[#ed1c24] hover:text-[#d13a5b] transition-colors">
+        <a :href="`/post/${post.slug}`" class="text-sm font-semibold text-[#c4131a] hover:text-[#a11015] transition-colors">
           Ler mais &rarr;
         </a>
       </div>
