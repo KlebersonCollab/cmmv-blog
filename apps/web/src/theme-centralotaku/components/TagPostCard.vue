@@ -23,11 +23,11 @@
                 {{ post.excerpt || stripHtml(post.content).substring(0, 120) + '...' }}
             </p>
 
-            <!-- Tags -->
-            <div v-if="post.tags && post.tags.length > 0" class="mb-4 flex flex-wrap gap-2">
-                <a v-for="tag in post.tags" :key="tag.id" :href="`/tag/${tag.slug}`"
-                   class="bg-gray-100 text-gray-700 text-xs px-2.5 py-1 rounded-full hover:bg-gray-200 transition-colors">
-                    #{{ tag.name }}
+            <!-- Categories -->
+            <div v-if="post.categories && post.categories.length > 0" class="mb-4 flex flex-wrap gap-2">
+                <a v-for="category in post.categories" :key="category.id" :href="`/category/${category.slug}`"
+                   class="bg-red-100 text-red-800 text-xs font-medium px-2.5 py-1 rounded-full hover:bg-red-200 transition-colors">
+                    {{ category.name }}
                 </a>
             </div>
 
@@ -62,4 +62,4 @@ defineProps({
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
-</style>
+</style> 

@@ -259,12 +259,12 @@ export const useBlog = () => {
         },
         getById: async (id: string, offset: number = 0) => {
             const urlQueries = new URLSearchParams({ limit: "32", offset: offset.toString() }).toString();
-            const { data } = await api.get<any[]>(`blog/categories/${id}?${urlQueries}`, "category");
+            const { data } = await api.get<any[]>(`blog/categories/${id}?${urlQueries}`, `category:${id}:${offset}`);
             return data.value || [];
         },
         getBySlug: async (slug: string, offset: number = 0) => {
             const urlQueries = new URLSearchParams({ limit: "32", offset: offset.toString() }).toString();
-            const { data } = await api.get<any[]>(`blog/categories/slug/${slug}?${urlQueries}`, "category");
+            const { data } = await api.get<any[]>(`blog/categories/slug/${slug}?${urlQueries}`, `category:${slug}:${offset}`);
             return data.value || [];
         }
     };
@@ -277,7 +277,7 @@ export const useBlog = () => {
         },
         getPostsBySlug: async (tagSlug: string, offset: number = 0) => {
             const urlQueries = new URLSearchParams({ limit: "32", offset: offset.toString() }).toString();
-            const { data } = await api.get<any[]>(`blog/posts/tags/${tagSlug}?${urlQueries}`, "post");
+            const { data } = await api.get<any[]>(`blog/posts/tags/${tagSlug}?${urlQueries}`, `tag:${tagSlug}:${offset}`);
             return data.value || [];
         }
     };

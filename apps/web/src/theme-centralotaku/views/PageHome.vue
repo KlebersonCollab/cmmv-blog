@@ -22,199 +22,7 @@
 
         <div v-else>
             <!-- Cover Section -->
-            <section v-if="posts.length > 0" class="mb-8 md:block hidden">
-                <!-- Full Layout (default) -->
-                <div v-if="coverSettings.layoutType === 'full' || !coverSettings.layoutType" class="bg-white rounded-lg overflow-hidden shadow-md">
-                    <a v-if="coverPosts.full" :href="`/post/${coverPosts.full.slug}`" class="block">
-                        <div class="relative h-[400px]">
-                            <OptimizedImage
-                                :src="coverPosts.full?.featureImage"
-                                :alt="coverPosts.full?.title"
-                                :title="coverPosts.full?.title"
-                                aria-label="Cover Image"
-                                width="890"
-                                height="606"
-                                loading="lazy"
-                                priority="high"
-                                icon-size="lg"
-                            />
-                            <div class="absolute bottom-0 left-0 right-0 p-6 bg-gradient-to-t from-black/90 via-black/70 to-transparent text-white">
-                                <div v-if="coverPosts.full && coverPosts.full.categories && coverPosts.full.categories.length > 0" class="mb-2">
-                                    <span class="bg-[#ed1c24] text-white px-3 py-1 rounded-md text-sm font-medium">
-                                        {{ coverPosts.full.categories[0].name }}
-                                    </span>
-                                </div>
-                                <h2 v-if="coverPosts.full" class="text-2xl md:text-3xl font-bold mb-3 text-white drop-shadow-[0_2px_2px_rgba(0,0,0,0.8)] bg-black/30 inline-block py-1 px-2 rounded">{{ coverPosts.full.title }}</h2>
-                                <p v-if="coverPosts.full" class="text-gray-100 mb-4 line-clamp-2 drop-shadow-[0_1px_1px_rgba(0,0,0,0.8)] bg-black/25 p-2 rounded max-w-2xl">
-                                    {{ coverPosts.full.excerpt || stripHtml(coverPosts.full.content).substring(0, 150) + '...' }}
-                                </p>
-                                <span class="inline-block bg-[#ed1c24] hover:bg-[#c5131a] text-white px-4 py-2 rounded-md transition-colors">
-                                    Continuar lendo
-                                </span>
-                            </div>
-                        </div>
-                    </a>
-                </div>
-
-                <!-- Carousel Layout -->
-                <div v-else-if="coverSettings.layoutType === 'carousel'" class="bg-white rounded-lg overflow-hidden shadow-md">
-                    <div class="relative h-[400px]">
-                        <div v-for="(post, index) in coverPosts.carousel" :key="post.id"
-                             class="absolute w-full h-full transition-opacity duration-500 ease-in-out"
-                             :class="{ 'opacity-100': currentCarouselIndex === index, 'opacity-0': currentCarouselIndex !== index }">
-                            <a :href="`/post/${post.slug}`" class="block h-full">
-                                <OptimizedImage
-                                    :src="post.featureImage"
-                                    :alt="post.title"
-                                    :title="post.title"
-                                    aria-label="Cover Image"
-                                    width="890"
-                                    height="606"
-                                    loading="lazy"
-                                    priority="high"
-                                    icon-size="lg"
-                                />
-                                <div class="absolute bottom-0 left-0 right-0 p-6 bg-gradient-to-t from-black/90 via-black/70 to-transparent text-white">
-                                    <div v-if="post.categories && post.categories.length > 0" class="mb-2">
-                                        <span class="bg-[#ed1c24] text-white px-3 py-1 rounded-md text-sm font-medium">
-                                            {{ post.categories[0].name }}
-                                        </span>
-                                    </div>
-                                    <h2 class="text-2xl md:text-3xl font-bold mb-3 text-white drop-shadow-[0_2px_2px_rgba(0,0,0,0.8)] bg-black/30 inline-block py-1 px-2 rounded">{{ post.title }}</h2>
-                                    <p class="text-gray-100 mb-4 line-clamp-2 drop-shadow-[0_1px_1px_rgba(0,0,0,0.8)] bg-black/25 p-2 rounded max-w-2xl">
-                                        {{ post.excerpt || stripHtml(post.content).substring(0, 150) + '...' }}
-                                    </p>
-                                    <span class="inline-block bg-[#ed1c24] hover:bg-[#c5131a] text-white px-4 py-2 rounded-md transition-colors">
-                                        Continuar lendo
-                                    </span>
-                                </div>
-                            </a>
-                        </div>
-
-                        <!-- Carousel Controls -->
-                        <div class="absolute top-0 bottom-0 left-0 flex items-center">
-                            <button @click="prevCarouselSlide" class="bg-black/30 hover:bg-black/50 text-white p-2 rounded-r-md focus:outline-none z-10">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
-                                </svg>
-                            </button>
-                        </div>
-                        <div class="absolute top-0 bottom-0 right-0 flex items-center">
-                            <button @click="nextCarouselSlide" class="bg-black/30 hover:bg-black/50 text-white p-2 rounded-l-md focus:outline-none z-10">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
-                                </svg>
-                            </button>
-                        </div>
-
-                        <!-- Carousel Indicators -->
-                        <div class="absolute bottom-3 left-0 right-0 flex justify-center space-x-2 z-10">
-                            <button
-                                v-for="(_, index) in coverPosts.carousel"
-                                :key="index"
-                                @click="currentCarouselIndex = index"
-                                class="w-3 h-3 rounded-full bg-white/50 focus:outline-none"
-                                :class="{ 'bg-white': currentCarouselIndex === index }"
-                            ></button>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Split Layout (1 large, 2 small) -->
-                <div v-else-if="coverSettings.layoutType === 'split'" class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div class="md:col-span-2 bg-white rounded-lg overflow-hidden shadow-md">
-                        <a v-if="coverPosts.splitMain" :href="`/post/${coverPosts.splitMain.slug}`" class="block h-full">
-                            <div class="relative h-full">
-                                <OptimizedImage
-                                    :src="coverPosts.splitMain?.featureImage"
-                                    :alt="coverPosts.splitMain?.title"
-                                    :title="coverPosts.splitMain?.title"
-                                    aria-label="Cover Image"
-                                    width="890"
-                                    height="606"
-                                    loading="lazy"
-                                    priority="high"
-                                    icon-size="lg"
-                                />
-                                <div class="absolute bottom-0 left-0 right-0 p-6 bg-gradient-to-t from-black/90 via-black/70 to-transparent text-white">
-                                    <div v-if="coverPosts.splitMain && coverPosts.splitMain.categories && coverPosts.splitMain.categories.length > 0" class="mb-2">
-                                        <span class="bg-[#ed1c24] text-white px-3 py-1 rounded-md text-sm font-medium">
-                                            {{ coverPosts.splitMain.categories[0].name }}
-                                        </span>
-                                    </div>
-                                    <h2 v-if="coverPosts.splitMain" class="text-xl md:text-2xl font-bold mb-3 text-white drop-shadow-[0_2px_2px_rgba(0,0,0,0.8)] bg-black/30 inline-block py-1 px-2 rounded">{{ coverPosts.splitMain.title }}</h2>
-                                    <p v-if="coverPosts.splitMain" class="text-gray-100 mb-4 line-clamp-2 drop-shadow-[0_1px_1px_rgba(0,0,0,0.8)] bg-black/25 p-2 rounded max-w-2xl">
-                                        {{ coverPosts.splitMain.excerpt || stripHtml(coverPosts.splitMain.content).substring(0, 150) + '...' }}
-                                    </p>
-                                    <span class="inline-block bg-[#ed1c24] hover:bg-[#c5131a] text-white px-4 py-2 rounded-md transition-colors">
-                                        Continuar lendo
-                                    </span>
-                                </div>
-                            </div>
-                        </a>
-                    </div>
-                    <div class="md:col-span-1 flex flex-col gap-4">
-                        <div v-for="(post, index) in coverPosts.splitSide" :key="post.id" class="flex-1 bg-white rounded-lg overflow-hidden shadow-md">
-                            <a :href="`/post/${post.slug}`" class="block h-full">
-                                <div class="relative h-full">
-                                    <OptimizedImage
-                                        :src="post.featureImage"
-                                        :alt="post.title"
-                                        loading="lazy"
-                                        icon-size="md"
-                                    />
-                                    <div class="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/90 via-black/70 to-transparent text-white">
-                                        <div v-if="post.categories && post.categories.length > 0" class="mb-2">
-                                            <span class="bg-[#ed1c24] text-white px-2 py-1 rounded-md text-xs font-medium">
-                                                {{ post.categories[0].name }}
-                                            </span>
-                                        </div>
-                                        <h3 class="text-base font-bold mb-2 text-white drop-shadow-[0_2px_2px_rgba(0,0,0,0.8)] bg-black/30 inline-block py-1 px-2 rounded">{{ post.title }}</h3>
-                                        <span class="text-sm text-white hover:text-[#ed1c24] transition-colors drop-shadow-[0_1px_1px_rgba(0,0,0,0.8)] bg-black/25 px-2 py-1 rounded inline-block">
-                                            Continuar lendo &rarr;
-                                        </span>
-                                    </div>
-                                </div>
-                            </a>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Dual Layout (2 equal columns) -->
-                <div v-else-if="coverSettings.layoutType === 'dual'" class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div v-for="post in coverPosts.dual" :key="post.id" class="bg-white rounded-lg overflow-hidden shadow-md">
-                        <a :href="`/post/${post.slug}`" class="block">
-                            <div class="relative h-[350px]">
-                                <OptimizedImage
-                                    :src="post.featureImage"
-                                    :alt="post.title"
-                                    :title="post.title"
-                                    aria-label="Cover Image"
-                                    width="890"
-                                    height="606"
-                                    loading="lazy"
-                                    priority="high"
-                                    icon-size="lg"
-                                />
-                                <div class="absolute bottom-0 left-0 right-0 p-6 bg-gradient-to-t from-black/90 via-black/70 to-transparent text-white">
-                                    <div v-if="post.categories && post.categories.length > 0" class="mb-2">
-                                        <span class="bg-[#ed1c24] text-white px-3 py-1 rounded-md text-sm font-medium">
-                                            {{ post.categories[0].name }}
-                                        </span>
-                                    </div>
-                                    <h2 class="text-xl md:text-2xl font-bold mb-3 text-white drop-shadow-[0_2px_2px_rgba(0,0,0,0.8)] bg-black/30 inline-block py-1 px-2 rounded">{{ post.title }}</h2>
-                                    <p class="text-gray-100 mb-4 line-clamp-2 drop-shadow-[0_1px_1px_rgba(0,0,0,0.8)] bg-black/25 p-2 rounded max-w-2xl">
-                                        {{ post.excerpt || stripHtml(post.content).substring(0, 120) + '...' }}
-                                    </p>
-                                    <span class="inline-block bg-[#ed1c24] hover:bg-[#c5131a] text-white px-4 py-2 rounded-md transition-colors">
-                                        Continuar lendo
-                                    </span>
-                                </div>
-                            </div>
-                        </a>
-                    </div>
-                </div>
-            </section>
+            <CoverSection :posts="posts" :settings="settings" />
 
             <!-- Top AdSense Banner -->
             <div v-if="adSettings.enableAds && adSettings.homePageHeader" class="w-full bg-gray-100 rounded-lg mb-8 overflow-hidden flex justify-center">
@@ -233,91 +41,38 @@
                 <div class="flex-grow">
                     <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
                         <div class="lg:col-span-2">
+                            <!-- Seção Estática de Últimas Notícias -->
                             <div class="flex flex-wrap items-center justify-between mb-6 border-b-2 border-gray-200 pb-2">
                                 <h2 class="text-xl font-bold text-[#ed1c24]">
-                                    <span v-if="!selectedCategory">Últimas Notícias</span>
-                                    <span v-else>Exibindo: {{ selectedCategoryName }}</span>
+                                    Últimas Notícias
                                 </h2>
                             </div>
-
-                            <div class="flex flex-wrap gap-2 mb-6">
-                                <button @click="selectedCategory = null" :class="[
-                                    'px-4 py-2 text-sm font-medium rounded-full transition-colors',
-                                    !selectedCategory ? 'bg-[#ed1c24] text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                                ]">
-                                    Todas
-                                </button>
-                                <button v-for="category in allRootCategoriesWithPosts" :key="category.id" @click="selectedCategory = category.id" :class="[
-                                    'px-4 py-2 text-sm font-medium rounded-full transition-colors',
-                                    selectedCategory === category.id ? 'bg-[#ed1c24] text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                                ]">
-                                    {{ category.name }}
-                                </button>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-8 mb-8">
+                                <PostCard v-for="post in latestPostsToDisplay" :key="post.id" :post="post" />
                             </div>
 
-                            <!-- Layout Padrão (Sem Filtro) -->
-                            <div v-if="!selectedCategory">
-                                <div v-if="latestPostsToDisplay.length > 0" class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                    <PostCard
-                                        v-for="post in latestPostsToDisplay"
-                                        :key="post.id"
-                                        :post="post"
-                                    />
-                                </div>
-                                <div v-else class="text-center py-10 text-gray-600">
-                                    <p>Nenhum post encontrado.</p>
-                                </div>
+                           
 
-                                <div v-if="adSettings.enableAds" class="w-full bg-gray-100 rounded-lg my-8 overflow-hidden flex justify-center">
-                                    <div class="ad-container ad-banner-mid py-2 px-4" v-if="getAdHtml('inContent')">
-                                        <div v-html="getAdHtml('inContent')"></div>
-                                    </div>
-                                    <div class="ad-container ad-banner-mid py-2 px-4" v-else>
-                                        <div class="ad-placeholder h-[90px] w-full max-w-[728px] bg-gray-200 flex items-center justify-center text-gray-400 text-sm">
-                                            <span>Anúncio</span>
-                                        </div>
-                                    </div>
-                                </div>
-                                
-                                <div v-if="popularPosts.length > 0">
-                                    <h2 class="text-xl font-bold mb-6 pb-2 text-[#ed1c24] border-b-2 border-gray-200">
-                                        Mais Populares
-                                    </h2>
-                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                        <PopularPostCard
-                                            v-for="post in popularPosts"
-                                            :key="post.id"
-                                            :post="post"
-                                        />
-                                    </div>
-                                </div>
-
-                                <div v-if="moreContentPosts.length > 0">
-                                    <h2 class="text-xl font-bold mt-8 mb-6 pb-2 text-[#ed1c24] border-b-2 border-gray-200">
-                                        Mais Conteúdo
-                                    </h2>
-                                    <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-                                        <PostCard
-                                            v-for="post in moreContentPosts"
-                                            :key="post.id"
-                                            :post="post"
-                                        />
-                                    </div>
-                                </div>
+                            <!-- Conteúdo Filtrado ou Seções de Categoria -->
+                            <div v-if="selectedCategory">
+                                <PostFeed
+                                    :selected-category="selectedCategory"
+                                    :posts="posts"
+                                    :ad-settings="adSettings"
+                                    :get-ad-html="getAdHtml"
+                                />
                             </div>
-
-                            <!-- Layout com Filtro Ativo -->
                             <div v-else>
-                                <div v-if="posts.length > 0" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-                                    <PostCard
-                                        v-for="post in posts"
-                                        :key="post.id"
-                                        :post="post"
+                                <CategorySection v-if="reviewPosts.length > 0" title="Análises em Destaque" :posts="reviewPosts" />
+                                <template v-for="category in mainNavRootCategories" :key="category.id">
+                                    <CategorySection
+                                        v-if="postsByMainCategory[category.id] && postsByMainCategory[category.id].length > 0"
+                                        :title="category.name"
+                                        :posts="postsByMainCategory[category.id]"
+                                        :category-slug="category.slug"
+                                        class="mt-8"
                                     />
-                                </div>
-                                <div v-else class="text-center py-10 text-gray-600">
-                                    <p>Nenhum post encontrado nesta categoria.</p>
-                                </div>
+                                </template>
                             </div>
 
                             <div v-if="adSettings.enableAds && adSettings.homePageAfterPosts" class="w-full bg-gray-100 rounded-lg mt-8 mb-4 overflow-hidden flex justify-center">
@@ -399,10 +154,12 @@ import { usePostsStore } from '../../store/posts';
 import { useMostAccessedPostsStore } from '../../store/mostaccessed';
 import { formatDate, stripHtml } from '../../composables/useUtils';
 import { useAds } from '../../composables/useAds';
-import OptimizedImage from '../../components/OptimizedImage.vue';
 import PostCard from '../components/PostCard.vue';
 import CategoryWidget from '../components/CategoryWidget.vue';
 import PopularPostCard from '../components/PopularPostCard.vue';
+import CoverSection from '../components/CoverSection.vue';
+import CategorySection from '../components/CategorySection.vue';
+import PostFeed from '../components/PostFeed.vue';
 
 declare global {
     interface Window {
@@ -433,6 +190,8 @@ const settings = computed<Record<string, any>>(() => {
 const categories = ref<any[]>(categoriesStore.getCategories || []);
 const posts = ref<any[]>(postsStore.getPosts || []);
 const popularPosts = ref<any[]>(mostAccessedStore.getMostAccessedPosts || []);
+const reviewPosts = ref<any[]>([]);
+const postsByMainCategory = ref<Record<string, any[]>>({});
 const loading = ref(true);
 const loadingMore = ref(false);
 const error = ref(null);
@@ -472,8 +231,15 @@ const latestPostsToDisplay = computed(() => {
     return posts.value.slice(0, 4);
 });
 
-const moreContentPosts = computed(() => {
-    return posts.value.slice(4);
+const mainNavRootCategories = computed(() => {
+    const navCategories = categories.value?.filter((category: any) => category.mainNav) || [];
+    navCategories.sort((a: any, b: any) => (a.mainNavIndex ?? 999) - (b.mainNavIndex ?? 999));
+
+    const reviewCategoryNames = ['review', 'reviews', 'análise', 'análises'];
+    // Filtra para não incluir a categoria de review que já tem uma seção dedicada
+    return navCategories.filter((cat: any) =>
+        !cat.parentCategory && !reviewCategoryNames.includes(cat.name.trim().toLowerCase())
+    );
 });
 
 const adPluginSettings = computed(() => {
@@ -634,23 +400,58 @@ const featuredPost = computed(() => {
     return posts.value.length > 0 ? posts.value[0] : null;
 });
 
-const reviewPosts = computed(() => {
+const loadPostsForMainCategories = async () => {
+    if (mainNavRootCategories.value.length === 0) return;
+
+    try {
+        const categoryPromises = mainNavRootCategories.value.map(category => {
+            const filters: any = { category: category.id, limit: 4 };
+            return blogAPI.posts.getAll(filters)
+                .then(response => ({
+                    categoryId: category.id,
+                    posts: (response.posts || []).slice(0, 4)
+                }));
+        });
+
+        const results = await Promise.all(categoryPromises);
+
+        const newPostsByCat: Record<string, any[]> = {};
+        results.forEach(result => {
+            if (result.posts.length > 0) {
+                newPostsByCat[result.categoryId] = result.posts;
+            }
+        });
+        postsByMainCategory.value = newPostsByCat;
+
+    } catch (err) {
+        console.error('Failed to load posts for main categories:', err);
+    }
+};
+
+const loadReviewPosts = async () => {
+    try {
+        const reviewCategoryNames = ['review', 'reviews', 'análise', 'análises'];
     const reviewCategory = categories.value.find(cat =>
-        cat.name.toLowerCase() === 'review' ||
-        cat.name.toLowerCase() === 'reviews' ||
-        cat.name.toLowerCase() === 'análise' ||
-        cat.name.toLowerCase() === 'análises');
+            reviewCategoryNames.includes(cat.name.trim().toLowerCase())
+        );
 
     if (reviewCategory) {
-        return posts.value.filter(post =>
-            post.categories &&
-            post.categories.some(cat => cat.id === reviewCategory.id)
-        ).slice(0, 2);
+            const filters: any = {
+                category: reviewCategory.id,
+                limit: 2
+            };
+            const response: any = await blogAPI.posts.getAll(filters);
+            if (response && response.posts) {
+                reviewPosts.value = response.posts;
+                console.log(`[Debug] Posts for category "${reviewCategory.name}" loaded:`, response.posts);
+            }
     } else {
-        const middleIndex = Math.min(Math.floor(posts.value.length / 2), 5);
-        return posts.value.slice(middleIndex, middleIndex + 2);
+             console.log('[Debug] Categoria de Análise não encontrada, a seção não será exibida.');
+        }
+    } catch (err) {
+        console.error('Failed to load review posts:', err);
     }
-});
+};
 
 const loadPosts = async () => {
     try {
@@ -748,6 +549,8 @@ onMounted(async () => {
     startCarouselInterval();
     loadAdScripts();
     loadSidebarLeftAd(sidebarLeftAdContainer.value);
+    loadReviewPosts();
+    loadPostsForMainCategories();
 
     await nextTick();
 });

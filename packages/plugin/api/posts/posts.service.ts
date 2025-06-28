@@ -958,16 +958,89 @@ export class PostsPublicService {
      * @param {string} tagSlug - The slug of the tag
      * @returns {Promise<any>}
      */
-    async getPostsByTagSlug(tagSlug: string) {
+    async getPostsByTagSlug(tagSlug: string, queries: any) {
         const TagsEntity = Repository.getEntity("TagsEntity");
+        const PostsEntity = Repository.getEntity("PostsEntity");
+        const CategoriesEntity = Repository.getEntity("CategoriesEntity");
+        const ProfilesEntity = Repository.getEntity("ProfilesEntity");
+
+
+        if(queries.limit > 100)
+            throw new Error("The limit must be less than 100");
+
+        if(tagSlug === undefined || tagSlug === null)
+            throw new Error("The tagSlug is required");
+
         const tag = await Repository.findOne(TagsEntity, { slug: tagSlug }, {
-            select: [ "id", "name" ]
+            select: [ "id", "name", "description" ]
         });
 
         if(!tag)
             throw new Error("Tag not found");
 
-        return this.getPostsByTag(tag.name);
+        const posts = await Repository.findAll(PostsEntity, {
+            searchField: 'tags',
+            search: tag.name,
+            limit: queries.limit || 10,
+            offset: queries.offset || 0,
+            status: "published",
+            sortBy: "publishedAt",
+            sort: "DESC",
+            type: "post"
+        }, [], {
+            select: [
+                'id', 'title', 'slug', 'content', 'status', 'autoPublishAt', 'authors', 'author',
+                'canonicalUrl', 'categories', 'codeInjectionBody', 'codeInjectionHead', 'excerpt',
+                'featureImage', 'featureImageAlt', 'featureImageCaption', 'featured', 'image',
+                'metaDescription', 'metaKeywords', 'metaTitle',
+                'publishedAt', 'tags', 'type', 'visibility', 'createdAt', 'updatedAt'
+            ]
+        });
+
+        if (posts?.data) {
+            const autorIds = [...new Set(posts.data.map((p: any) => p.author))].filter(id => id);
+            const categoriaIds = [...new Set(posts.data.flatMap((p: any) => p.categories || []))].filter(id => id);
+
+            let autores: any[] = [];
+            if (autorIds.length > 0) {
+                const authorsData = await Repository.findAll(ProfilesEntity, {
+                    user: In(autorIds),
+                    limit: 100
+                }, [], {
+                    select: [
+                        'id', 'user', 'name', 'slug', 'image', 'coverImage',
+                        'bio', 'website', 'location', 'facebook', 'twitter', 'locale',
+                        'visibility', 'metaTitle', 'metaDescription', 'lastSeen'
+                    ]
+                });
+                autores = authorsData?.data || [];
+            }
+
+            let categorias: any[] = [];
+            if (categoriaIds.length > 0) {
+                const categoriesData = await Repository.findAll(CategoriesEntity, {
+                    id: In(categoriaIds),
+                    limit: 100
+                }, [], {
+                    select: [ "id", "name", "slug", "description" ]
+                });
+                categorias = categoriesData?.data || [];
+            }
+
+            for (const post of posts.data) {
+                if (post.author) {
+                    post.author = autores.find((a: any) => a.user === post.author);
+                }
+                if (post.categories) {
+                    post.categories = post.categories.map((catId: any) =>
+                        categorias.find((c: any) => c.id === catId)
+                    ).filter((c: any) => c);
+                }
+            }
+        }
+
+
+        return { posts, tag };
     }
 
     /**

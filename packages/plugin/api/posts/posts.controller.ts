@@ -142,8 +142,8 @@ export class PostsController {
     @CacheControl({ maxAge: 3600, public: true })
     @ContentType('application/json')
     @Raw()
-    async getPostsByTagSlug(@Param("slug") slug: string, @Response() res: any) {
-        return await this.postsPublicService.getPostsByTagSlug(slug);
+    async getPostsByTagSlug(@Param("slug") slug: string, @Queries() queries: any, @Response() res: any) {
+        return await this.postsPublicService.getPostsByTagSlug(slug, queries);
     }
 
     @Get("posts/most-accessed", {
