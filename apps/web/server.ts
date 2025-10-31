@@ -299,7 +299,7 @@ async function bootstrap() {
                     piniaState, settings, posts, prefetchCache
                 } = await render(url);
 
-                const piniaScript = `\n<script>window.__PINIA__ = ${JSON.stringify(piniaState).replace(/</g, '\\u003c')}</script>`;
+                const piniaScript = `\n<script data-cfasync="false">window.__PINIA__ = ${JSON.stringify(piniaState).replace(/</g, '\\u003c')}</script>`;
 
                 if (redirect) {
                     res.writeHead(301, { Location: redirect });
@@ -310,7 +310,7 @@ async function bootstrap() {
 
                 const ssrData = { ...globalThis.__SSR_DATA__, prefetchCache };
                 const serializedData = JSON.stringify(ssrData).replace(/</g, '\\u003c');
-                const dataScript = `<script>window.__CMMV_DATA__ = ${serializedData};</script>${piniaScript}`;
+                const dataScript = `<script data-cfasync="false">window.__CMMV_DATA__ = ${serializedData};</script>${piniaScript}`;
 
                 template = await transformHtmlTemplate(head, template.replace(`<div id="app"></div>`, `<div id="app">${appHtml}</div>${dataScript}`));
 
