@@ -314,9 +314,36 @@ async function bootstrap() {
 
                 template = await transformHtmlTemplate(head, template.replace(`<div id="app"></div>`, `<div id="app">${appHtml}</div>${dataScript}`));
 
-                template = template.replace("<analytics />", settings["blog.analyticsCode"] || "").replace("<analytics>", settings["blog.analyticsCode"] || "");
-                template = template.replace("<custom-js />", settings["blog.customJs"] || "").replace("<custom-js>", settings["blog.customJs"] || "");
+                // Proteger scripts injetados dinamicamente do Rocket Loader
+                let analyticsCode = settings["blog.analyticsCode"] || "";
+                if (analyticsCode && analyticsCode.includes('<script') && !analyticsCode.includes('data-cfasync')) {
+                    analyticsCode = analyticsCode.replace(/<script(\s[^>]*)?>/gi, '<script data-cfasync="false"$1>');
+                }
+                
+                let customJs = settings["blog.customJs"] || "";
+                if (customJs && customJs.includes('<script') && !customJs.includes('data-cfasync')) {
+                    customJs = customJs.replace(/<script(\s[^>]*)?>/gi, '<script data-cfasync="false"$1>');
+                }
+                
+                template = template.replace("<analytics />", analyticsCode).replace("<analytics>", analyticsCode);
+                template = template.replace("<custom-js />", customJs).replace("<custom-js>", customJs);
                 template = template.replace("<custom-css />", settings["blog.customCss"] || "").replace("<custom-css>", settings["blog.customCss"] || "");
+                
+                // Proteger TODOS os scripts restantes do Rocket Loader (incluindo os gerados pelo unhead)
+                template = template.replace(/<script(\s[^>]*)?>/gi, (match) => {
+                    // Se já tem data-cfasync, não modificar
+                    if (match.includes('data-cfasync')) {
+                        return match;
+                    }
+                    // Adicionar data-cfasync="false" preservando outros atributos
+                    if (match.includes(' ')) {
+                        // Já tem atributos, inserir antes do >
+                        return match.replace('>', ' data-cfasync="false">');
+                    } else {
+                        // Não tem atributos além de <script
+                        return '<script data-cfasync="false">';
+                    }
+                });
 
                 if (process.env.NODE_ENV === 'production') {
                     template = template.replace(/<script[^>]*src="\/@vite\/client"[^>]*><\/script>/g, '');
