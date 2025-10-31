@@ -328,27 +328,29 @@ async function bootstrap() {
                 template = template.replace("<analytics />", analyticsCode).replace("<analytics>", analyticsCode);
                 template = template.replace("<custom-js />", customJs).replace("<custom-js>", customJs);
                 template = template.replace("<custom-css />", settings["blog.customCss"] || "").replace("<custom-css>", settings["blog.customCss"] || "");
-                
-                // Proteger TODOS os scripts restantes do Rocket Loader (incluindo os gerados pelo unhead)
-                template = template.replace(/<script(\s[^>]*)?>/gi, (match) => {
-                    // Se já tem data-cfasync, não modificar
-                    if (match.includes('data-cfasync')) {
-                        return match;
-                    }
-                    // Adicionar data-cfasync="false" preservando outros atributos
-                    if (match.includes(' ')) {
-                        // Já tem atributos, inserir antes do >
-                        return match.replace('>', ' data-cfasync="false">');
-                    } else {
-                        // Não tem atributos além de <script
-                        return '<script data-cfasync="false">';
-                    }
-                });
 
                 if (process.env.NODE_ENV === 'production') {
                     template = template.replace(/<script[^>]*src="\/@vite\/client"[^>]*><\/script>/g, '');
                     template = template.replace(/<script[^>]*type="[^"]*"[^>]*src="\/@vite\/client"[^>]*><\/script>/g, '');
                 }
+                
+                // Proteger TODOS os scripts do Rocket Loader - DEVE ser a ÚLTIMA operação antes de servir
+                // Isso garante que scripts do Vite, unhead, analytics e custom-js estejam protegidos
+                // Usa uma regex mais robusta que captura scripts mesmo com múltiplos atributos
+                template = template.replace(/<script\s*([^>]*?)>/gi, (match, attributes) => {
+                    // Se já tem data-cfasync, não modificar
+                    if (match.toLowerCase().includes('data-cfasync')) {
+                        return match;
+                    }
+                    // Adicionar data-cfasync="false" preservando todos os atributos existentes
+                    if (attributes && attributes.trim()) {
+                        // Tem atributos, adicionar data-cfasync antes do >
+                        return `<script ${attributes.trim()} data-cfasync="false">`;
+                    } else {
+                        // Não tem atributos
+                        return '<script data-cfasync="false">';
+                    }
+                });
 
                 for(const key in metadata)
                     template = template.replace(`{${key}}`, metadata[key]);
