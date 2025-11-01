@@ -299,7 +299,7 @@ async function bootstrap() {
                     piniaState, settings, posts, prefetchCache
                 } = await render(url);
 
-                const piniaScript = `\n<script data-cfasync="false">window.__PINIA__ = ${JSON.stringify(piniaState).replace(/</g, '\\u003c')}</script>`;
+                const piniaScript = `\n<script>window.__PINIA__ = ${JSON.stringify(piniaState).replace(/</g, '\\u003c')}</script>`;
 
                 if (redirect) {
                     res.writeHead(301, { Location: redirect });
@@ -310,47 +310,18 @@ async function bootstrap() {
 
                 const ssrData = { ...globalThis.__SSR_DATA__, prefetchCache };
                 const serializedData = JSON.stringify(ssrData).replace(/</g, '\\u003c');
-                const dataScript = `<script data-cfasync="false">window.__CMMV_DATA__ = ${serializedData};</script>${piniaScript}`;
+                const dataScript = `<script>window.__CMMV_DATA__ = ${serializedData};</script>${piniaScript}`;
 
                 template = await transformHtmlTemplate(head, template.replace(`<div id="app"></div>`, `<div id="app">${appHtml}</div>${dataScript}`));
 
-                // Proteger scripts injetados dinamicamente do Rocket Loader
-                let analyticsCode = settings["blog.analyticsCode"] || "";
-                if (analyticsCode && analyticsCode.includes('<script') && !analyticsCode.includes('data-cfasync')) {
-                    analyticsCode = analyticsCode.replace(/<script(\s[^>]*)?>/gi, '<script data-cfasync="false"$1>');
-                }
-                
-                let customJs = settings["blog.customJs"] || "";
-                if (customJs && customJs.includes('<script') && !customJs.includes('data-cfasync')) {
-                    customJs = customJs.replace(/<script(\s[^>]*)?>/gi, '<script data-cfasync="false"$1>');
-                }
-                
-                template = template.replace("<analytics />", analyticsCode).replace("<analytics>", analyticsCode);
-                template = template.replace("<custom-js />", customJs).replace("<custom-js>", customJs);
+                template = template.replace("<analytics />", settings["blog.analyticsCode"] || "").replace("<analytics>", settings["blog.analyticsCode"] || "");
+                template = template.replace("<custom-js />", settings["blog.customJs"] || "").replace("<custom-js>", settings["blog.customJs"] || "");
                 template = template.replace("<custom-css />", settings["blog.customCss"] || "").replace("<custom-css>", settings["blog.customCss"] || "");
 
                 if (process.env.NODE_ENV === 'production') {
                     template = template.replace(/<script[^>]*src="\/@vite\/client"[^>]*><\/script>/g, '');
                     template = template.replace(/<script[^>]*type="[^"]*"[^>]*src="\/@vite\/client"[^>]*><\/script>/g, '');
                 }
-                
-                // Proteger TODOS os scripts do Rocket Loader - DEVE ser a ÚLTIMA operação antes de servir
-                // Isso garante que scripts do Vite, unhead, analytics e custom-js estejam protegidos
-                // Usa uma regex mais robusta que captura scripts mesmo com múltiplos atributos
-                template = template.replace(/<script\s*([^>]*?)>/gi, (match, attributes) => {
-                    // Se já tem data-cfasync, não modificar
-                    if (match.toLowerCase().includes('data-cfasync')) {
-                        return match;
-                    }
-                    // Adicionar data-cfasync="false" preservando todos os atributos existentes
-                    if (attributes && attributes.trim()) {
-                        // Tem atributos, adicionar data-cfasync antes do >
-                        return `<script ${attributes.trim()} data-cfasync="false">`;
-                    } else {
-                        // Não tem atributos
-                        return '<script data-cfasync="false">';
-                    }
-                });
 
                 for(const key in metadata)
                     template = template.replace(`{${key}}`, metadata[key]);
