@@ -43,21 +43,37 @@ export default defineConfig(({ mode }) => {
         build: {
             sourcemap: true,
             minify: 'terser',
+            terserOptions: {
+                compress: {
+                    drop_console: false,
+                    drop_debugger: true,
+                    pure_funcs: ['console.warn', 'console.error']
+                },
+                format: {
+                    comments: false
+                },
+                mangle: {
+                    safari10: true,
+                    reserved: ['app', 'App', 'window', 'document']
+                }
+            },
             outDir: 'dist',
             rollupOptions: {
                 input: {
                     index: path.resolve(__dirname, 'index.html'),
                 },
-            },
-            manualChunks(id: string) {
-                if (id.includes('node_modules')) {
-                    if (id.includes('vue-router'))
-                        return 'vendor-vue-router';
+                output: {
+                    manualChunks(id: string) {
+                        if (id.includes('node_modules')) {
+                            if (id.includes('vue-router'))
+                                return 'vendor-vue-router';
 
-                    if (id.includes('vue'))
-                        return 'vendor-vue';
+                            if (id.includes('vue'))
+                                return 'vendor-vue';
 
-                    return 'vendor';
+                            return 'vendor';
+                        }
+                    }
                 }
             }
         },

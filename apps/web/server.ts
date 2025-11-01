@@ -299,7 +299,17 @@ async function bootstrap() {
                     piniaState, settings, posts, prefetchCache
                 } = await render(url);
 
-                const piniaScript = `\n<script>window.__PINIA__ = ${JSON.stringify(piniaState).replace(/</g, '\\u003c')}</script>`;
+                // Serializar dados com escape seguro para scripts inline
+                const serializeForScript = (data: any): string => {
+                    return JSON.stringify(data)
+                        .replace(/</g, '\\u003c')
+                        .replace(/>/g, '\\u003e')
+                        .replace(/\//g, '\\/')
+                        .replace(/&/g, '\\u0026');
+                };
+
+                const piniaStateSerialized = serializeForScript(piniaState);
+                const piniaScript = `\n<script>window.__PINIA__=${piniaStateSerialized};</script>`;
 
                 if (redirect) {
                     res.writeHead(301, { Location: redirect });
@@ -309,8 +319,8 @@ async function bootstrap() {
                 globalThis.__SSR_DATA__ = { ...globalThis.__SSR_DATA__, posts };
 
                 const ssrData = { ...globalThis.__SSR_DATA__, prefetchCache };
-                const serializedData = JSON.stringify(ssrData).replace(/</g, '\\u003c');
-                const dataScript = `<script>window.__CMMV_DATA__ = ${serializedData};</script>${piniaScript}`;
+                const serializedData = serializeForScript(ssrData);
+                const dataScript = `<script>window.__CMMV_DATA__=${serializedData};</script>${piniaScript}`;
 
                 template = await transformHtmlTemplate(head, template.replace(`<div id="app"></div>`, `<div id="app">${appHtml}</div>${dataScript}`));
 
