@@ -38,6 +38,11 @@ export class RawController {
     @Get("getAIJobStatus/:jobId", {exclude: true })
     @Auth("feedraw:get")
     async getAIJobStatus(@Param("jobId") jobId: string) {
+        // Validate jobId format
+        if (!jobId || !jobId.startsWith('ai-job-')) {
+            throw new HttpException(`Invalid job ID format: ${jobId}`, HttpStatus.BAD_REQUEST);
+        }
+
         try {
             return await this.rawService.getAIJobStatus(jobId);
         } catch (error) {
