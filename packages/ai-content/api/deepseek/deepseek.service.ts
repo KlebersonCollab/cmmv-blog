@@ -128,7 +128,7 @@ export class DeepSeekService {
                     const backoffDelay = baseDelay * Math.pow(2, attempt) + Math.random() * 1000;
                     const retryAfter = apiError.retryAfter ? parseInt(apiError.retryAfter, 10) * 1000 : backoffDelay;
                     
-                    this.logger.warn(
+                    this.logger.log(
                         `Rate limit hit (429). Retrying in ${Math.ceil(retryAfter / 1000)} seconds... ` +
                         `(Attempt ${attempt + 1}/${maxRetries + 1})`
                     );
@@ -150,7 +150,7 @@ export class DeepSeekService {
 
                 // For non-rate-limit errors, retry with exponential backoff
                 const backoffDelay = baseDelay * Math.pow(2, attempt);
-                this.logger.warn(`Request failed. Retrying in ${Math.ceil(backoffDelay / 1000)} seconds... (Attempt ${attempt + 1}/${maxRetries + 1})`);
+                this.logger.log(`Request failed. Retrying in ${Math.ceil(backoffDelay / 1000)} seconds... (Attempt ${attempt + 1}/${maxRetries + 1})`);
                 await this.delay(backoffDelay);
             }
         }
