@@ -7,6 +7,11 @@ interface RequestQueueItem {
     retries: number;
 }
 
+interface ApiError extends Error {
+    status?: number;
+    retryAfter?: string;
+}
+
 @Service()
 export class DeepSeekService {
     private readonly logger = new Logger("DeepSeekService");
@@ -113,15 +118,17 @@ export class DeepSeekService {
                 const result = await this.makeApiRequest(item.prompt);
                 item.resolve(result);
                 return;
-            } catch (error: any) {
-                const isRateLimitError = error.status === 429 || 
-                                        (error.message && error.message.includes('429')) ||
-                                        (error.message && error.message.includes('rate limit'));
+            } catch (error: unknown) {
+                const apiError = error as ApiError;
+                const errorMessage = apiError instanceof Error ? apiError.message : String(error);
+                const isRateLimitError = apiError.status === 429 || 
+                                        (errorMessage.includes('429')) ||
+                                        (errorMessage.includes('rate limit'));
 
                 if (isRateLimitError && attempt < maxRetries) {
                     // Exponential backoff with jitter
                     const backoffDelay = baseDelay * Math.pow(2, attempt) + Math.random() * 1000;
-                    const retryAfter = error.retryAfter ? parseInt(error.retryAfter) * 1000 : backoffDelay;
+                    const retryAfter = apiError.retryAfter ? parseInt(apiError.retryAfter, 10) * 1000 : backoffDelay;
                     
                     this.logger.warn(
                         `Rate limit hit (429). Retrying in ${Math.ceil(retryAfter / 1000)} seconds... ` +
@@ -137,8 +144,9 @@ export class DeepSeekService {
 
                 // If it's the last attempt or not a rate limit error, reject
                 if (attempt === maxRetries) {
-                    this.logger.error(`Failed to generate content after ${maxRetries + 1} attempts: ${error.message}`);
-                    item.reject(error);
+                    const finalError = apiError instanceof Error ? apiError : new Error(errorMessage);
+                    this.logger.error(`Failed to generate content after ${maxRetries + 1} attempts: ${errorMessage}`);
+                    item.reject(finalError);
                     return;
                 }
 
@@ -176,9 +184,9 @@ export class DeepSeekService {
         // Handle rate limiting (429)
         if (response.status === 429) {
             const retryAfter = response.headers.get('Retry-After');
-            const error: any = new Error(`Rate limit exceeded (429). Too many requests to DeepSeek API.`);
+            const error: ApiError = new Error(`Rate limit exceeded (429). Too many requests to DeepSeek API.`) as ApiError;
             error.status = 429;
-            error.retryAfter = retryAfter;
+            error.retryAfter = retryAfter || undefined;
             throw error;
         }
 
@@ -188,13 +196,13 @@ export class DeepSeekService {
             let errorMessage = `Failed to generate AI content: ${response.status} ${response.statusText}`;
             
             try {
-                const errorJson = JSON.parse(errorText);
+                const errorJson = JSON.parse(errorText) as { error?: { message?: string } };
                 errorMessage = errorJson.error?.message || errorMessage;
             } catch {
                 errorMessage = errorText || errorMessage;
             }
 
-            const error: any = new Error(errorMessage);
+            const error: ApiError = new Error(errorMessage) as ApiError;
             error.status = response.status;
             throw error;
         }
