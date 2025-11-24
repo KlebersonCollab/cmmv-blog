@@ -1456,6 +1456,16 @@ const generateAIContent = async (): Promise<void> => {
             try {
                 const jobStatus = await feedClient.raw.getAIJobStatus(jobId);
 
+                // Check if response is an error
+                if (jobStatus && jobStatus.error) {
+                    throw new Error(jobStatus.message || 'Failed to check job status');
+                }
+
+                // Check if jobStatus is null or undefined
+                if (!jobStatus) {
+                    throw new Error('No response from server. Job may not exist.');
+                }
+
                 if (jobStatus.status === 'completed') {
                     const response = jobStatus.result;
 

@@ -129,8 +129,34 @@ export function useApi() {
 
                 const contentType = response.headers.get('content-type')?.split(';')[0]
 
-                if (response.status !== 200)
-                    return null;
+                if (response.status === 401 || response.status === 403) {
+                    // Authentication/Authorization error - redirect to login
+                    ssrLocalStorage.removeItem('token')
+                    ssrLocalStorage.removeItem('refreshToken')
+                    token.value = null
+                    refreshToken.value = null
+                    router.push('/login')
+                    throw new Error('Authentication required')
+                }
+
+                if (response.status !== 200) {
+                    // Try to get error message from response
+                    let errorMessage = `Request failed with status ${response.status}`;
+                    try {
+                        const errorData = contentType === 'application/json' || contentType === 'text/json'
+                            ? await response.json()
+                            : await response.text();
+                        errorMessage = errorData?.message || errorData?.error || errorMessage;
+                    } catch {
+                        // Ignore parsing errors
+                    }
+                    // Return error object instead of null to allow proper error handling
+                    return { 
+                        status: response.status, 
+                        error: true,
+                        message: errorMessage 
+                    };
+                }
 
                 const data: any =
                     contentType === 'application/json' || contentType === 'text/json'
