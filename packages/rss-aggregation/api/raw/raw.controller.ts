@@ -1,6 +1,7 @@
 import {
     Controller, Get, Param,
-    Put, Body, Queries, Response, Query, Post
+    Put, Body, Queries, Response, Query, Post,
+    HttpException, HttpStatus
 } from "@cmmv/http";
 
 import {
@@ -37,7 +38,15 @@ export class RawController {
     @Get("getAIJobStatus/:jobId", {exclude: true })
     @Auth("feedraw:get")
     async getAIJobStatus(@Param("jobId") jobId: string) {
-        return await this.rawService.getAIJobStatus(jobId);
+        try {
+            return await this.rawService.getAIJobStatus(jobId);
+        } catch (error) {
+            const errorMessage = error instanceof Error ? error.message : String(error);
+            if (errorMessage.includes('not found')) {
+                throw new HttpException(`Job ${jobId} not found. It may have expired or been cleaned up.`, HttpStatus.NOT_FOUND);
+            }
+            throw new HttpException(errorMessage, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
     }
 
     @Put("updateRaw/:id", {exclude: true })

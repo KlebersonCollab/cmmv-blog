@@ -88,6 +88,8 @@ export class RawService {
         };
 
         this.aiJobs.set(jobId, job);
+        this.logger.log(`Created AI job ${jobId} for raw feed item ${id}. Total jobs: ${this.aiJobs.size}`);
+        
         setTimeout(() => this.processAIJob(jobId), 0);
 
         return jobId;
@@ -277,11 +279,17 @@ export class RawService {
      * @returns The current status and result (if available) of the job
      */
     async getAIJobStatus(jobId: string) {
+        this.logger.log(`Checking status for job: ${jobId}`);
+        this.logger.log(`Total jobs in memory: ${this.aiJobs.size}`);
+        
         const job = this.aiJobs.get(jobId);
 
-        if (!job)
+        if (!job) {
+            this.logger.error(`Job ${jobId} not found. Available jobs: ${Array.from(this.aiJobs.keys()).join(', ')}`);
             throw new Error(`Job ${jobId} not found`);
+        }
 
+        this.logger.log(`Job ${jobId} found with status: ${job.status}`);
         this.cleanupOldJobs();
 
         if (job.status === 'completed') {
