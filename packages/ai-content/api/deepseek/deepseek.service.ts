@@ -4,7 +4,6 @@ interface RequestQueueItem {
     resolve: (value: string) => void;
     reject: (error: Error) => void;
     prompt: string;
-    retries: number;
 }
 
 interface ApiError extends Error {
@@ -39,8 +38,7 @@ export class DeepSeekService {
             this.requestQueue.push({
                 resolve,
                 reject,
-                prompt,
-                retries: 0
+                prompt
             });
 
             this.processQueue();
@@ -120,8 +118,8 @@ export class DeepSeekService {
                 return;
             } catch (error: unknown) {
                 const apiError = error as ApiError;
-                const errorMessage = apiError instanceof Error ? apiError.message : String(error);
-                const isRateLimitError = apiError.status === 429 || 
+                const errorMessage = error instanceof Error ? error.message : String(error);
+                const isRateLimitError = (apiError.status === 429) || 
                                         (errorMessage.includes('429')) ||
                                         (errorMessage.includes('rate limit'));
 
@@ -144,7 +142,7 @@ export class DeepSeekService {
 
                 // If it's the last attempt or not a rate limit error, reject
                 if (attempt === maxRetries) {
-                    const finalError = apiError instanceof Error ? apiError : new Error(errorMessage);
+                    const finalError = error instanceof Error ? error : new Error(errorMessage);
                     this.logger.error(`Failed to generate content after ${maxRetries + 1} attempts: ${errorMessage}`);
                     item.reject(finalError);
                     return;
@@ -184,7 +182,7 @@ export class DeepSeekService {
         // Handle rate limiting (429)
         if (response.status === 429) {
             const retryAfter = response.headers.get('Retry-After');
-            const error: ApiError = new Error(`Rate limit exceeded (429). Too many requests to DeepSeek API.`) as ApiError;
+            const error = new Error(`Rate limit exceeded (429). Too many requests to DeepSeek API.`) as ApiError;
             error.status = 429;
             error.retryAfter = retryAfter || undefined;
             throw error;
@@ -202,7 +200,7 @@ export class DeepSeekService {
                 errorMessage = errorText || errorMessage;
             }
 
-            const error: ApiError = new Error(errorMessage) as ApiError;
+            const error = new Error(errorMessage) as ApiError;
             error.status = response.status;
             throw error;
         }
