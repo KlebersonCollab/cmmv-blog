@@ -330,9 +330,25 @@ export class RawService {
                 this.aiJobs.set(jobId, job);
             }
         } catch (error) {
-            this.logger.error(`Error processing AI job ${jobId}: ${error instanceof Error ? error.message : String(error)}`);
+            const errorMessage = error instanceof Error ? error.message : String(error);
+            const errorName = error instanceof Error ? error.name : 'Unknown';
+            
+            this.logger.error(`Error processing AI job ${jobId}: ${errorMessage} (name: ${errorName})`);
+            
+            // Check if it's a timeout/abort error
+            if (error instanceof Error && (
+                error.name === 'AbortError' ||
+                errorMessage.includes('timeout') ||
+                errorMessage.includes('aborted') ||
+                errorMessage.includes('terminated') ||
+                errorMessage.includes('signal')
+            )) {
+                job.error = 'Request timeout: The AI service took longer than 160 seconds to respond';
+            } else {
+                job.error = errorMessage;
+            }
+            
             job.status = 'error';
-            job.error = error instanceof Error ? error.message : String(error);
             this.aiJobs.set(jobId, job);
         }
     }

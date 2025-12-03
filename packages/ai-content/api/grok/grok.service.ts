@@ -48,8 +48,15 @@ export class GrokService {
         } catch (error: unknown) {
             clearTimeout(timeoutId);
             
-            if (error instanceof Error && error.name === 'AbortError') {
-                throw new Error('Request timeout: The AI service took longer than 160 seconds to respond');
+            if (error instanceof Error) {
+                // Check for various abort/timeout error types
+                if (error.name === 'AbortError' || 
+                    error.message?.includes('aborted') || 
+                    error.message?.includes('terminated') ||
+                    error.message?.includes('signal') ||
+                    error.message?.includes('The operation was aborted')) {
+                    throw new Error('Request timeout: The AI service took longer than 160 seconds to respond');
+                }
             }
             
             throw error;
