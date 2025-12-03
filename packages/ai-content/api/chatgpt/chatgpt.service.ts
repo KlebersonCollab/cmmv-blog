@@ -6,7 +6,7 @@ export class ChatGPTService {
         const openaiApiKey = Config.get("blog.openaiApiKey");
 
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 160000); // 160 seconds timeout
+        const timeoutId = setTimeout(() => controller.abort(), 240000); // 240 seconds (4 minutes) timeout
 
         try {
             const response = await fetch('https://api.openai.com/v1/chat/completions', {
@@ -55,7 +55,7 @@ export class ChatGPTService {
                     error.message?.includes('terminated') ||
                     error.message?.includes('signal') ||
                     error.message?.includes('The operation was aborted')) {
-                    throw new Error('Request timeout: The AI service took longer than 160 seconds to respond');
+                    throw new Error('Request timeout: The AI service took longer than 240 seconds to respond');
                 }
             }
             

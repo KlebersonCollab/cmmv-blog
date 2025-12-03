@@ -343,7 +343,7 @@ export class RawService {
                 errorMessage.includes('terminated') ||
                 errorMessage.includes('signal')
             )) {
-                job.error = 'Request timeout: The AI service took longer than 160 seconds to respond';
+                job.error = 'Request timeout: The AI service took longer than 240 seconds to respond';
             } else {
                 job.error = errorMessage;
             }

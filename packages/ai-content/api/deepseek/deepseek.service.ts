@@ -160,7 +160,7 @@ export class DeepSeekService {
         const deepseekApiKey = Config.get("blog.deepseekApiKey");
 
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 160000); // 160 seconds timeout
+        const timeoutId = setTimeout(() => controller.abort(), 240000); // 240 seconds (4 minutes) timeout
 
         try {
             const response = await fetch('https://api.deepseek.com/v1/chat/completions', {
@@ -233,7 +233,7 @@ export class DeepSeekService {
                     error.message?.includes('signal') ||
                     error.message?.includes('The operation was aborted')) {
                     this.logger.error(`Request aborted/timed out: ${error.message}`);
-                    throw new Error('Request timeout: The AI service took longer than 160 seconds to respond');
+                    throw new Error('Request timeout: The AI service took longer than 240 seconds to respond');
                 }
                 
                 // Log other errors for debugging
