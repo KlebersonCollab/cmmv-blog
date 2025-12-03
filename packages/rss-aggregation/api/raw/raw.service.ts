@@ -351,15 +351,26 @@ export class RawService {
             );
             
             if (isTimeoutError) {
+                // If job is still processing, don't mark as error - let it continue
+                // The frontend will keep polling and eventually get the result
+                if (job.status === 'processing') {
+                    this.logger.warn(`Timeout detected for job ${jobId} but job is still processing. Allowing job to continue...`);
+                    this.logger.warn(`The AI service request timed out, but the job may still complete. Frontend will continue polling.`);
+                    // Don't mark as error - let the job continue processing
+                    // The timeout might be from the HTTP request, but the AI service might still be working
+                    return; // Exit without marking as error
+                }
+                
                 this.logger.error(`Timeout detected for job ${jobId}: ${errorMessage}`);
                 job.error = 'Request timeout: The AI service took longer than 480 seconds to respond';
+                job.status = 'error';
             } else {
                 // Log the actual error for debugging
                 this.logger.error(`Non-timeout error for job ${jobId}: ${errorMessage}`);
                 job.error = errorMessage;
+                job.status = 'error';
             }
             
-            job.status = 'error';
             this.aiJobs.set(jobId, job);
         }
     }
