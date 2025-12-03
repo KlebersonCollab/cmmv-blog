@@ -49,12 +49,12 @@ export class ChatGPTService {
             clearTimeout(timeoutId);
             
             if (error instanceof Error) {
-                // Check for various abort/timeout error types
-                if (error.name === 'AbortError' || 
-                    error.message?.includes('aborted') || 
-                    error.message?.includes('terminated') ||
-                    error.message?.includes('signal') ||
-                    error.message?.includes('The operation was aborted')) {
+                // Check for various abort/timeout error types - be more specific
+                const isAbortError = error.name === 'AbortError' || 
+                    error.message?.toLowerCase().includes('the operation was aborted') ||
+                    (error.message?.toLowerCase().includes('aborted') && error.message?.toLowerCase().includes('signal'));
+                
+                if (isAbortError) {
                     throw new Error('Request timeout: The AI service took longer than 240 seconds to respond');
                 }
             }

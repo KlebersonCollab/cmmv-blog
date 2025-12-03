@@ -332,19 +332,28 @@ export class RawService {
         } catch (error) {
             const errorMessage = error instanceof Error ? error.message : String(error);
             const errorName = error instanceof Error ? error.name : 'Unknown';
+            const errorStack = error instanceof Error ? error.stack : undefined;
             
             this.logger.error(`Error processing AI job ${jobId}: ${errorMessage} (name: ${errorName})`);
+            if (errorStack) {
+                this.logger.error(`Error stack: ${errorStack.substring(0, 500)}`);
+            }
             
-            // Check if it's a timeout/abort error
-            if (error instanceof Error && (
+            // Check if it's a timeout/abort error - be more specific
+            const isTimeoutError = error instanceof Error && (
                 error.name === 'AbortError' ||
-                errorMessage.includes('timeout') ||
-                errorMessage.includes('aborted') ||
-                errorMessage.includes('terminated') ||
-                errorMessage.includes('signal')
-            )) {
+                (errorMessage.toLowerCase().includes('timeout') && errorMessage.toLowerCase().includes('240 seconds')) ||
+                (errorMessage.toLowerCase().includes('timeout') && errorMessage.toLowerCase().includes('longer than')) ||
+                errorMessage.toLowerCase() === 'the operation was aborted' ||
+                (errorMessage.toLowerCase().includes('aborted') && errorMessage.toLowerCase().includes('signal'))
+            );
+            
+            if (isTimeoutError) {
+                this.logger.error(`Timeout detected for job ${jobId}: ${errorMessage}`);
                 job.error = 'Request timeout: The AI service took longer than 240 seconds to respond';
             } else {
+                // Log the actual error for debugging
+                this.logger.error(`Non-timeout error for job ${jobId}: ${errorMessage}`);
                 job.error = errorMessage;
             }
             

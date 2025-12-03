@@ -226,18 +226,21 @@ export class DeepSeekService {
             clearTimeout(timeoutId);
             
             if (error instanceof Error) {
-                // Check for various abort/timeout error types
-                if (error.name === 'AbortError' || 
-                    error.message?.includes('aborted') || 
-                    error.message?.includes('terminated') ||
-                    error.message?.includes('signal') ||
-                    error.message?.includes('The operation was aborted')) {
-                    this.logger.error(`Request aborted/timed out: ${error.message}`);
+                // Check for various abort/timeout error types - be more specific
+                const isAbortError = error.name === 'AbortError' || 
+                    error.message?.toLowerCase().includes('the operation was aborted') ||
+                    (error.message?.toLowerCase().includes('aborted') && error.message?.toLowerCase().includes('signal'));
+                
+                if (isAbortError) {
+                    this.logger.error(`Request aborted/timed out: ${error.message} (name: ${error.name})`);
                     throw new Error('Request timeout: The AI service took longer than 240 seconds to respond');
                 }
                 
-                // Log other errors for debugging
+                // Log other errors for debugging - don't convert to timeout
                 this.logger.error(`DeepSeek API request error: ${error.message}, name: ${error.name}`);
+                if (error.stack) {
+                    this.logger.error(`Error stack: ${error.stack.substring(0, 500)}`);
+                }
             }
             
             throw error;
