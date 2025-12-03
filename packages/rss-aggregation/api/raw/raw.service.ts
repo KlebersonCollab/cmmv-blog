@@ -340,17 +340,19 @@ export class RawService {
             }
             
             // Check if it's a timeout/abort error - be more specific
+            const errorMessageLower = errorMessage.toLowerCase().trim();
             const isTimeoutError = error instanceof Error && (
                 error.name === 'AbortError' ||
-                (errorMessage.toLowerCase().includes('timeout') && errorMessage.toLowerCase().includes('240 seconds')) ||
-                (errorMessage.toLowerCase().includes('timeout') && errorMessage.toLowerCase().includes('longer than')) ||
-                errorMessage.toLowerCase() === 'the operation was aborted' ||
-                (errorMessage.toLowerCase().includes('aborted') && errorMessage.toLowerCase().includes('signal'))
+                errorMessageLower === 'terminated' ||
+                (errorMessageLower.includes('timeout') && errorMessageLower.includes('480 seconds')) ||
+                (errorMessageLower.includes('timeout') && errorMessageLower.includes('longer than')) ||
+                errorMessageLower === 'the operation was aborted' ||
+                (errorMessageLower.includes('aborted') && errorMessageLower.includes('signal'))
             );
             
             if (isTimeoutError) {
                 this.logger.error(`Timeout detected for job ${jobId}: ${errorMessage}`);
-                job.error = 'Request timeout: The AI service took longer than 240 seconds to respond';
+                job.error = 'Request timeout: The AI service took longer than 480 seconds to respond';
             } else {
                 // Log the actual error for debugging
                 this.logger.error(`Non-timeout error for job ${jobId}: ${errorMessage}`);

@@ -158,11 +158,19 @@ export class DeepSeekService {
 
     private async makeApiRequest(prompt: string): Promise<string> {
         const deepseekApiKey = Config.get("blog.deepseekApiKey");
+        const requestStartTime = Date.now();
+
+        this.logger.log(`Starting DeepSeek API request, prompt length: ${prompt.length} characters`);
 
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 240000); // 240 seconds (4 minutes) timeout
+        const timeoutId = setTimeout(() => {
+            const elapsed = Date.now() - requestStartTime;
+            this.logger.error(`DeepSeek API request timeout after ${elapsed}ms (480 seconds limit)`);
+            controller.abort();
+        }, 480000); // 480 seconds (8 minutes) timeout
 
         try {
+            this.logger.log(`Making fetch request to DeepSeek API...`);
             const response = await fetch('https://api.deepseek.com/v1/chat/completions', {
                 method: 'POST',
                 headers: {
@@ -183,6 +191,9 @@ export class DeepSeekService {
                 }),
                 signal: controller.signal
             });
+
+            const fetchTime = Date.now() - requestStartTime;
+            this.logger.log(`DeepSeek API fetch completed in ${fetchTime}ms, status: ${response.status}`);
 
             // Handle rate limiting (429)
             if (response.status === 429) {
@@ -221,26 +232,34 @@ export class DeepSeekService {
             }
 
             clearTimeout(timeoutId);
+            const totalTime = Date.now() - requestStartTime;
+            this.logger.log(`DeepSeek API request completed successfully in ${totalTime}ms`);
             return generatedText;
         } catch (error: unknown) {
             clearTimeout(timeoutId);
+            const totalTime = Date.now() - requestStartTime;
             
             if (error instanceof Error) {
                 // Check for various abort/timeout error types - be more specific
+                const errorMsgLower = error.message?.toLowerCase().trim() || '';
                 const isAbortError = error.name === 'AbortError' || 
-                    error.message?.toLowerCase().includes('the operation was aborted') ||
-                    (error.message?.toLowerCase().includes('aborted') && error.message?.toLowerCase().includes('signal'));
+                    errorMsgLower === 'terminated' ||
+                    errorMsgLower.includes('the operation was aborted') ||
+                    (errorMsgLower.includes('aborted') && errorMsgLower.includes('signal'));
                 
                 if (isAbortError) {
-                    this.logger.error(`Request aborted/timed out: ${error.message} (name: ${error.name})`);
-                    throw new Error('Request timeout: The AI service took longer than 240 seconds to respond');
+                    this.logger.error(`Request aborted/timed out after ${totalTime}ms: ${error.message} (name: ${error.name})`);
+                    this.logger.error(`This may indicate: 1) Network timeout, 2) Server-side timeout, 3) Proxy/LB timeout, or 4) Actual 480s timeout`);
+                    throw new Error('Request timeout: The AI service took longer than 480 seconds to respond');
                 }
                 
                 // Log other errors for debugging - don't convert to timeout
-                this.logger.error(`DeepSeek API request error: ${error.message}, name: ${error.name}`);
+                this.logger.error(`DeepSeek API request error after ${totalTime}ms: ${error.message}, name: ${error.name}`);
                 if (error.stack) {
                     this.logger.error(`Error stack: ${error.stack.substring(0, 500)}`);
                 }
+            } else {
+                this.logger.error(`DeepSeek API unknown error after ${totalTime}ms: ${String(error)}`);
             }
             
             throw error;
