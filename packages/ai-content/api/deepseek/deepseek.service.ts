@@ -29,15 +29,50 @@ export class DeepSeekService {
 
     async generateContent(prompt: string): Promise<string> {
         const deepseekApiKey = Config.get("blog.deepseekApiKey");
+        const queueStartTime = Date.now();
 
         if (!deepseekApiKey) {
             throw new Error('DeepSeek API key not configured');
         }
 
+        this.logger.log(`Adding request to queue. Queue size: ${this.requestQueue.length}, Active requests: ${this.activeRequests}`);
+
         return new Promise<string>((resolve, reject) => {
+            let timeoutCleared = false;
+            
+            // Add timeout for the entire operation (queue wait + request)
+            const totalTimeout = setTimeout(() => {
+                if (!timeoutCleared) {
+                    const elapsed = Date.now() - queueStartTime;
+                    this.logger.error(`Total operation timeout after ${elapsed}ms (queue + request exceeded 160 seconds)`);
+                    this.logger.error(`Queue state: size=${this.requestQueue.length}, active=${this.activeRequests}, processing=${this.processingQueue}`);
+                    reject(new Error('Request timeout: The AI service took longer than 160 seconds to respond (including queue wait time)'));
+                }
+            }, 160000);
+
+            const wrappedResolve = (value: string) => {
+                if (!timeoutCleared) {
+                    timeoutCleared = true;
+                    clearTimeout(totalTimeout);
+                    const totalTime = Date.now() - queueStartTime;
+                    this.logger.log(`Request completed successfully in ${totalTime}ms (including queue wait)`);
+                    resolve(value);
+                }
+            };
+
+            const wrappedReject = (error: Error) => {
+                if (!timeoutCleared) {
+                    timeoutCleared = true;
+                    clearTimeout(totalTimeout);
+                    const totalTime = Date.now() - queueStartTime;
+                    this.logger.error(`Request failed after ${totalTime}ms (including queue wait): ${error.message}`);
+                    reject(error);
+                }
+            };
+
             this.requestQueue.push({
-                resolve,
-                reject,
+                resolve: wrappedResolve,
+                reject: wrappedReject,
                 prompt
             });
 
@@ -165,9 +200,9 @@ export class DeepSeekService {
         const controller = new AbortController();
         const timeoutId = setTimeout(() => {
             const elapsed = Date.now() - requestStartTime;
-            this.logger.error(`DeepSeek API request timeout after ${elapsed}ms (480 seconds limit)`);
+            this.logger.error(`DeepSeek API request timeout after ${elapsed}ms (160 seconds limit)`);
             controller.abort();
-        }, 480000); // 480 seconds (8 minutes) timeout
+        }, 160000); // 160 seconds timeout
 
         try {
             this.logger.log(`Making fetch request to DeepSeek API...`);
@@ -250,7 +285,7 @@ export class DeepSeekService {
                 if (isAbortError) {
                     this.logger.error(`Request aborted/timed out after ${totalTime}ms: ${error.message} (name: ${error.name})`);
                     this.logger.error(`This may indicate: 1) Network timeout, 2) Server-side timeout, 3) Proxy/LB timeout, or 4) Actual 480s timeout`);
-                    throw new Error('Request timeout: The AI service took longer than 480 seconds to respond');
+                    throw new Error('Request timeout: The AI service took longer than 160 seconds to respond');
                 }
                 
                 // Log other errors for debugging - don't convert to timeout
