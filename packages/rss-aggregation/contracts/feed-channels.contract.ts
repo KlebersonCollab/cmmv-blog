@@ -68,4 +68,16 @@ export class FeedChannelsContract extends AbstractContract {
         defaultValue: false
     })
     requestLink!: boolean;
+
+    @ContractField({
+        protoType: 'string',
+        nullable: true,
+    })
+    aiModel?: string;
+
+    @ContractField({
+        protoType: 'string',
+        nullable: true,
+    })
+    aiPromptId?: string;
 }

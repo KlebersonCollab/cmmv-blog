@@ -353,6 +353,42 @@
                             <p class="mt-1 text-sm text-neutral-500">If enabled, the system will fetch the original article content from the source website. Disable for feeds that already include full content.</p>
                         </div>
 
+                        <hr class="border-neutral-700 my-4" />
+
+                        <div class="mb-4">
+                            <label for="aiModel" class="block text-sm font-medium text-neutral-300 mb-1">Default AI Model</label>
+                            <select
+                                id="aiModel"
+                                v-model="channelForm.aiModel"
+                                class="w-full px-3 py-2 bg-neutral-700 border border-neutral-600 rounded-md text-white focus:outline-none focus:ring-1 focus:ring-blue-500"
+                            >
+                                <option v-for="model in availableModels" :key="model.value" :value="model.value">
+                                    {{ model.label }}
+                                </option>
+                            </select>
+                            <p class="mt-1 text-sm text-neutral-500">The model to use for AI content generation in this channel</p>
+                        </div>
+
+                        <div class="mb-4">
+                            <label for="aiPromptId" class="block text-sm font-medium text-neutral-300 mb-1">Default AI Prompt Template</label>
+                            <div v-if="loadingPrompts" class="flex items-center py-1">
+                                <div class="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-blue-500 mr-2"></div>
+                                <span class="text-neutral-500 text-sm">Loading prompts...</span>
+                            </div>
+                            <select
+                                v-else
+                                id="aiPromptId"
+                                v-model="channelForm.aiPromptId"
+                                class="w-full px-3 py-2 bg-neutral-700 border border-neutral-600 rounded-md text-white focus:outline-none focus:ring-1 focus:ring-blue-500"
+                            >
+                                <option value="default">Default</option>
+                                <option v-for="prompt in promptsList" :key="prompt.id" :value="prompt.id">
+                                    {{ prompt.name || 'Unnamed Prompt' }}
+                                </option>
+                            </select>
+                            <p class="mt-1 text-sm text-neutral-500">The prompt template for this channel</p>
+                        </div>
+
                         <div class="flex justify-end space-x-3 mt-6">
                             <button
                                 type="button"
@@ -475,6 +511,7 @@ import { useFeedClient } from '@cmmv/rss-aggregation/admin/client'
 import Pagination from '@cmmv/blog/admin/components/Pagination.vue'
 import DeleteDialog from '@cmmv/blog/admin/components/DeleteDialog.vue'
 import ToastNotification from '@cmmv/blog/admin/components/ToastNotification.vue'
+import { useAdminClient } from '@cmmv/blog/admin/client'
 
 const feedClient = useFeedClient()
 
@@ -490,7 +527,9 @@ const channelForm = ref({
     rss: '',
     intervalHours: 24,
     active: true,
-    requestLink: false
+    requestLink: false,
+    aiModel: 'gemini',
+    aiPromptId: 'default'
 })
 const channelToEdit = ref(null)
 const formErrors = ref({})
@@ -526,6 +565,28 @@ const filters = ref({
 
 const processingFeeds = ref(false)
 const processingChannels = ref([])
+
+const adminClient = useAdminClient()
+const promptsList = ref([])
+const loadingPrompts = ref(false)
+const availableModels = [
+    { value: 'gemini', label: 'Gemini (Google)' },
+    { value: 'chatgpt', label: 'ChatGPT (OpenAI)' },
+    { value: 'grok', label: 'Grok (xAI)' },
+    { value: 'deepseek', label: 'DeepSeek' }
+]
+
+const loadPrompts = async () => {
+    try {
+        loadingPrompts.value = true
+        const response = await adminClient.prompts.get({ limit: 100 })
+        promptsList.value = response.data || []
+    } catch (err) {
+        console.error('Failed to load prompts:', err)
+    } finally {
+        loadingPrompts.value = false
+    }
+}
 
 // Process feeds warning dialog
 const showProcessWarning = ref(false)
@@ -619,8 +680,11 @@ const openAddDialog = () => {
         rss: '',
         intervalHours: 24,
         active: true,
-        requestLink: false
+        requestLink: false,
+        aiModel: 'gemini',
+        aiPromptId: 'default'
     }
+    loadPrompts()
     formErrors.value = {}
     showDialog.value = true
 }
@@ -638,15 +702,18 @@ const openEditDialog = (channel) => {
         rss: channel.rss,
         intervalHours: intervalHours,
         active: channel.active === undefined ? true : channel.active,
-        requestLink: channel.requestLink === undefined ? false : channel.requestLink
+        requestLink: channel.requestLink === undefined ? false : channel.requestLink,
+        aiModel: channel.aiModel || 'gemini',
+        aiPromptId: channel.aiPromptId || 'default'
     }
+    loadPrompts()
     formErrors.value = {}
     showDialog.value = true
 }
 
 const closeDialog = () => {
     showDialog.value = false
-    channelForm.value = { name: '', url: '', rss: '', intervalHours: 24, active: true, requestLink: false }
+    channelForm.value = { name: '', url: '', rss: '', intervalHours: 24, active: true, requestLink: false, aiModel: 'gemini', aiPromptId: 'default' }
     formErrors.value = {}
     channelToEdit.value = null
 }
@@ -691,7 +758,9 @@ const saveChannel = async () => {
             rss: channelForm.value.rss.trim(),
             intervalUpdate: intervalUpdate,
             active: channelForm.value.active,
-            requestLink: channelForm.value.requestLink
+            requestLink: channelForm.value.requestLink,
+            aiModel: channelForm.value.aiModel,
+            aiPromptId: channelForm.value.aiPromptId
         }
 
         if (isEditing.value) {
