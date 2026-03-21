@@ -852,14 +852,14 @@ const headData = computed(() => ({
         },
         {
             type: 'application/ld+json',
-            innerHTML: JSON.stringify(vue3.createLdJSON('breadcrumb', {
-                title: post.value?.title,
-                category: post.value?.categories && post.value?.categories.length > 0 ? {
+            innerHTML: JSON.stringify(vue3.createLdJSON('breadcrumb', [
+                { name: 'Home', url: settings.value?.['blog.url'] || '/' },
+                ...((post.value?.categories && post.value?.categories.length > 0) ? [{
                     name: post.value.categories[0].name,
-                    slug: post.value.categories[0].slug
-                } : null,
-                url: pageUrl.value
-            }, settings.value))
+                    url: `/category/${post.value.categories[0].slug}`
+                }] : []),
+                { name: post.value?.title, url: pageUrl.value }
+            ], settings.value))
         }
     ] : [
         {

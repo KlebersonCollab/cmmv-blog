@@ -91,10 +91,10 @@ const headData = computed(() => {
         script: [
             {
                 type: 'application/ld+json',
-                innerHTML: JSON.stringify(vue3.createLdJSON('breadcrumb', {
-                    title: category.value.name,
-                    url: pageUrl.value
-                }, settings.value))
+                innerHTML: JSON.stringify(vue3.createLdJSON('breadcrumb', [
+                    { name: 'Home', url: settings.value?.['blog.url'] || '/' },
+                    { name: category.value.name, url: pageUrl.value }
+                ], settings.value))
             }
         ]
     }
