@@ -87,6 +87,15 @@ const headData = computed(() => {
         ],
         link: [
             { rel: 'canonical', href: pageUrl.value }
+        ],
+        script: [
+            {
+                type: 'application/ld+json',
+                innerHTML: JSON.stringify(vue3.createLdJSON('breadcrumb', {
+                    title: category.value.name,
+                    url: pageUrl.value
+                }, settings.value))
+            }
         ]
     }
 });

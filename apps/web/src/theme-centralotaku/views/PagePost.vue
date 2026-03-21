@@ -461,9 +461,10 @@ import { useRoute } from 'vue-router'
 import { useHead } from '@unhead/vue'
 import { vue3 } from '@cmmv/blog/client'
 import { formatDate, stripHtml } from '../../composables/useUtils'
-import CommentSection from '../../components/CommentSection.vue'
 import OptimizedImage from '../../components/OptimizedImage.vue'
-import CategoryWidget from '../components/CategoryWidget.vue'
+import { defineAsyncComponent } from 'vue'
+
+const CategoryWidget = defineAsyncComponent(() => import('../components/CategoryWidget.vue'))
 import { useSettingsStore } from '../../store/settings';
 import { usePostsStore } from '../../store/posts';
 import { useCategoriesStore } from '../../store/categories';
@@ -848,8 +849,18 @@ const headData = computed(() => ({
         {
             type: 'application/ld+json',
             innerHTML: JSON.stringify(vue3.createLdJSON('post', post.value, settings.value))
+        },
+        {
+            type: 'application/ld+json',
+            innerHTML: JSON.stringify(vue3.createLdJSON('breadcrumb', {
+                title: post.value?.title,
+                category: post.value?.categories && post.value?.categories.length > 0 ? {
+                    name: post.value.categories[0].name,
+                    slug: post.value.categories[0].slug
+                } : null,
+                url: pageUrl.value
+            }, settings.value))
         }
-
     ] : [
         {
             type: 'text/javascript',

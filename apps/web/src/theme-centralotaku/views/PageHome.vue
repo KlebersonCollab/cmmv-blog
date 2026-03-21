@@ -1,5 +1,6 @@
 <template>
     <div class="w-full max-w-[1200px] mx-auto px-4">
+        <h1 class="sr-only" v-if="settings">{{ settings.title }} - {{ settings.description }}</h1>
         <div v-if="error" class="text-center py-16 bg-white rounded-lg shadow-md">
             <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 mx-auto text-red-500 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -156,10 +157,10 @@ import { useMostAccessedPostsStore } from '../../store/mostaccessed';
 import { formatDate, stripHtml } from '../../composables/useUtils';
 import { useAds } from '../../composables/useAds';
 import PostCard from '../components/PostCard.vue';
-import CategoryWidget from '../components/CategoryWidget.vue';
-import PopularPostCard from '../components/PopularPostCard.vue';
 import CoverSection from '../components/CoverSection.vue';
 
+const CategoryWidget = defineAsyncComponent(() => import('../components/CategoryWidget.vue'));
+const PopularPostCard = defineAsyncComponent(() => import('../components/PopularPostCard.vue'));
 const CategorySection = defineAsyncComponent(() => import('../components/CategorySection.vue'));
 const PostFeed = defineAsyncComponent(() => import('../components/PostFeed.vue'));
 
@@ -436,7 +437,13 @@ const headData = computed(() => {
             { property: 'og:description', content: settings.value.description },
             { property: 'og:image', content: settings.value.logo }
         ],
-        link: links
+        link: links,
+        script: typeof window === 'undefined' ? [
+            {
+                type: 'application/ld+json',
+                innerHTML: JSON.stringify(vue3.createLdJSON('website', {}, rawSettings.value))
+            }
+        ] : []
     };
 });
 

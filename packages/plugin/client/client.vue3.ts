@@ -600,5 +600,45 @@ export const createLdJSON = (type: string, data: any, settings: any) => {
                 ]
             }
             break;
+        case "website":
+            return {
+                "@context": "https://schema.org",
+                "@graph": [
+                    {
+                        "@type": "Organization",
+                        "@id": `${getEnv('VITE_WEBSITE_URL')}/#organization`,
+                        "name": settings['blog.title'],
+                        "url": getEnv('VITE_WEBSITE_URL'),
+                        "logo": {
+                             "@type": "ImageObject",
+                             "@id": `${getEnv('VITE_WEBSITE_URL')}/#logo`,
+                             "url": settings['blog.logo'],
+                             "caption": settings['blog.title'],
+                             "inLanguage": settings['blog.language'] || 'pt-BR'
+                        }
+                    },
+                    {
+                        "@type": "WebSite",
+                        "@id": `${getEnv('VITE_WEBSITE_URL')}/#website`,
+                        "url": getEnv('VITE_WEBSITE_URL'),
+                        "name": settings['blog.title'],
+                        "publisher": {
+                            "@id": `${getEnv('VITE_WEBSITE_URL')}/#organization`
+                        },
+                        "inLanguage": settings['blog.language'] || 'pt-BR'
+                    }
+                ]
+            };
+        case "breadcrumb":
+            return {
+                "@context": "https://schema.org",
+                "@type": "BreadcrumbList",
+                "itemListElement": data.map((item: any, index: number) => ({
+                    "@type": "ListItem",
+                    "position": index + 1,
+                    "name": item.name,
+                    "item": item.url
+                }))
+            };
     }
 }

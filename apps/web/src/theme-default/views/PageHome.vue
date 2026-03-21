@@ -1,5 +1,6 @@
 <template>
     <div class="lg:ml-64 w-full relative px-4">
+        <h1 class="sr-only">{{ settings?.['blog.title'] }} - {{ settings?.['blog.description'] }}</h1>
         <!-- Cover Section -->
         <div class="mx-auto px-4 py-8 pb-0 hidden md:hidden lg:block">
             <div class="bg-white dark:bg-neutral-900 rounded-lg max-w-[1200px] m-auto overflow-hidden shadow-lg">
@@ -339,6 +340,7 @@ const settingsStore = useSettingsStore();
 const postsStore = usePostsStore();
 const blogAPI = vue3.useBlog();
 const settings = ref<any>(settingsStore.getSettings);
+const isSSR = typeof window === 'undefined';
 const posts = ref<any[]>(postsStore.getPosts);
 const loading = ref(true);
 const loadingMore = ref(false);
@@ -550,7 +552,13 @@ if(settings.value){
         link: [
             { rel: 'canonical', href: settings.value['blog.url'] },
             { rel: 'alternate', href: `${settings.value['blog.url']}/feed`, type: 'application/rss+xml', title: settings.value['blog.title'] }
-        ]
+        ],
+        script: isSSR ? [
+            {
+                type: 'application/ld+json',
+                innerHTML: JSON.stringify(vue3.createLdJSON('website', {}, settings.value))
+            }
+        ] : []
     })
 
     useHead(headData);

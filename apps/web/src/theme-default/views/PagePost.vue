@@ -355,6 +355,14 @@ if(settings.value){
             {
                 type: 'application/ld+json',
                 innerHTML: JSON.stringify(vue3.createLdJSON('post', post.value, settings.value))
+            },
+            {
+                type: 'application/ld+json',
+                innerHTML: JSON.stringify(vue3.createLdJSON('breadcrumb', [
+                    { name: 'Home', url: import.meta.env.VITE_WEBSITE_URL },
+                    { name: post.value?.categories?.[0]?.name || 'Blog', url: `${import.meta.env.VITE_WEBSITE_URL}/category/${post.value?.categories?.[0]?.slug || ''}` },
+                    { name: post.value?.title, url: pageUrl.value }
+                ], settings.value))
             }
         ] : []
     }))
