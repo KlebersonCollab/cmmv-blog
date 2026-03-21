@@ -1,6 +1,6 @@
 {
     "name": "cmmv-blog",
-    "version": "0.0.127",
+    "version": "0.0.128",
     "private": true,
     "description": "Blog package for CMMV",
     "type": "module",
@@ -28,6 +28,8 @@
     },
     "dependencies": {
         "@cmmv/blog": "workspace:*",
+        "@cmmv/core": "latest",
+        "@cmmv/server": "latest",
         "@cmmv/newsletter": "workspace:*",
         "@tailwindcss/vite": "^4.1.4",
         "@unhead/vue": "^2.0.5",
