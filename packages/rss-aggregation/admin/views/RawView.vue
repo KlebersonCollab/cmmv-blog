@@ -91,6 +91,12 @@
                     </svg>
                     {{ classifyLoading ? 'Classifying...' : 'Classify with AI' }}
                 </button>
+                <button @click="openBatchAIDialog" class="px-2.5 py-1 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-medium rounded-md transition-colors flex items-center" :disabled="selectedItems.length === 0">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                    </svg>
+                    Batch AI Generate ({{ selectedItems.length }})
+                </button>
                 <button @click="refreshData" class="px-2.5 py-1 bg-neutral-700 hover:bg-neutral-600 text-white text-xs font-medium rounded-md transition-colors flex items-center">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
@@ -129,6 +135,16 @@
                                 </svg>
                                 Mass Exclusion
                             </button>
+                            <button
+                                v-if="selectedItems.length > 0"
+                                @click="openBatchAIDialog"
+                                class="w-full px-4 py-2 text-left text-sm text-white hover:bg-neutral-700 flex items-center"
+                            >
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                                </svg>
+                                Batch AI Generate ({{ selectedItems.length }})
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -164,7 +180,40 @@
 
         <!-- Feed Items List -->
         <div v-else>
-            <div v-for="item in feedItems" :key="item.id" class="bg-neutral-800 rounded-lg mb-4 overflow-hidden">
+            <!-- Select All / Batch Actions Bar -->
+            <div class="bg-neutral-800 rounded-lg p-3 mb-4 flex items-center justify-between border border-neutral-700">
+                <div class="flex items-center">
+                    <input
+                        type="checkbox"
+                        v-model="selectAll"
+                        @change="toggleSelectAll"
+                        class="h-4 w-4 rounded border-neutral-600 bg-neutral-700 text-blue-600 focus:ring-blue-500 mr-3"
+                    >
+                    <span class="text-sm text-neutral-300">
+                        {{ selectedItems.length }} items selected
+                    </span>
+                </div>
+                <div v-if="selectedItems.length > 0" class="flex space-x-2">
+                    <button @click="openBatchAIDialog" class="text-xs bg-indigo-600 hover:bg-indigo-700 text-white px-2 py-1 rounded transition-colors">
+                        Batch AI
+                    </button>
+                    <button @click="openBulkDeleteDialog" class="text-xs bg-red-600 hover:bg-red-700 text-white px-2 py-1 rounded transition-colors">
+                        Delete Selected
+                    </button>
+                </div>
+            </div>
+            <div v-for="item in feedItems" :key="item.id" class="bg-neutral-800 rounded-lg mb-4 overflow-hidden relative group">
+                <!-- Checkbox Overlay -->
+                <div class="absolute top-3 left-3 z-10">
+                    <input
+                        type="checkbox"
+                        :value="item.id"
+                        v-model="selectedItems"
+                        class="h-4 w-4 rounded border-neutral-600 bg-neutral-700 text-blue-600 focus:ring-blue-500 opacity-0 group-hover:opacity-100 transition-opacity"
+                        :class="{ 'opacity-100': selectedItems.includes(item.id) }"
+                    >
+                </div>
+
                 <div class="flex flex-col md:flex-row h-48">
                     <!-- Feature Image -->
                     <div v-if="item.featureImage" class="w-full md:w-64 h-full flex-shrink-0 bg-neutral-900 flex items-center justify-center overflow-hidden relative group">
@@ -181,6 +230,12 @@
                         <div class="flex items-start justify-between mb-2">
                             <div>
                                 <div class="flex items-center space-x-2 text-sm text-neutral-400 mb-1">
+                                    <span v-if="item.aiStatus === 'completed'" class="bg-indigo-900 text-indigo-200 px-2 py-0.5 rounded text-[10px] uppercase font-bold flex items-center" title="AI Version Generated">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                                        </svg>
+                                        AI Saved
+                                    </span>
                                     <span class="bg-blue-900 text-blue-200 px-2 py-0.5 rounded text-xs">
                                         {{ getChannelName(item.channel) }}
                                     </span>
@@ -304,6 +359,19 @@
                                 </option>
                             </select>
                         </div>
+                        
+                        <!-- AI Model Selector -->
+                        <div class="w-40">
+                            <label class="block text-xs text-gray-500 mb-1">AI Version / Model:</label>
+                            <select
+                                v-model="selectedModel"
+                                class="w-full px-2 py-1 text-sm bg-white border border-gray-300 rounded-md text-gray-700 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                            >
+                                <option v-for="model in availableModels" :key="model.value" :value="model.value">
+                                    {{ model.label }}
+                                </option>
+                            </select>
+                        </div>
                     </div>
                     <div class="flex items-center space-x-3">
 
@@ -321,6 +389,17 @@
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
                             </svg>
                             {{ aiLoading ? 'Generating...' : 'Generate AI Version' }}
+                        </button>
+                        
+                        <button
+                            v-if="aiContent && !editMode"
+                            @click="saveAIResult"
+                            class="px-3 py-1 bg-green-600 hover:bg-green-700 text-white text-sm rounded-md transition-colors flex items-center"
+                        >
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
+                            </svg>
+                            Save AI Version
                         </button>
                         <button
                             @click="toggleEditMode"
@@ -1143,6 +1222,107 @@
                 </div>
             </div>
         </div>
+
+        <!-- Batch AI Dialog -->
+        <div v-if="showBatchAIDialog" class="fixed inset-0 bg-black/75 flex items-center justify-center z-50 p-4" style="backdrop-filter: blur(4px);">
+            <div class="bg-neutral-800 rounded-lg shadow-xl max-w-md w-full p-6 border border-neutral-700">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-xl font-semibold text-white">Batch AI Generate</h3>
+                    <button @click="closeBatchAIDialog" class="text-neutral-400 hover:text-white">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                </div>
+
+                <div class="mb-6">
+                    <p class="text-neutral-300 mb-4">
+                        You selected <strong>{{ selectedItems.length }}</strong> items to generate AI versions for.
+                    </p>
+
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-neutral-400 mb-1">AI Model</label>
+                            <select
+                                v-model="selectedModel"
+                                class="w-full bg-neutral-700 border border-neutral-600 rounded-md py-2 px-3 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            >
+                                <option v-for="model in availableModels" :key="model.value" :value="model.value">
+                                    {{ model.label }}
+                                </option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium text-neutral-400 mb-1">Prompt Template</label>
+                            <div class="relative">
+                                <select
+                                    v-model="selectedPrompt"
+                                    class="w-full bg-neutral-700 border border-neutral-600 rounded-md py-2 px-3 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none"
+                                    :disabled="loadingPrompts"
+                                >
+                                    <option value="default">System Default</option>
+                                    <option v-for="prompt in promptsList" :key="prompt.id" :value="prompt.id">
+                                        {{ prompt.name }}
+                                    </option>
+                                </select>
+                                <div v-if="loadingPrompts" class="absolute right-3 top-2.5">
+                                    <svg class="animate-spin h-4 w-4 text-neutral-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                    </svg>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex justify-end space-x-3">
+                    <button
+                        @click="closeBatchAIDialog"
+                        class="px-4 py-2 bg-neutral-700 hover:bg-neutral-600 text-white rounded-md transition-colors"
+                    >
+                        Cancel
+                    </button>
+                    <button
+                        @click="startBatchAI"
+                        class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md transition-colors font-medium"
+                    >
+                        Start Processing
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Batch AI Progress Overlay -->
+        <div v-if="batchAILoading" class="fixed inset-0 bg-black/80 flex items-center justify-center z-[60] p-4" style="backdrop-filter: blur(4px);">
+            <div class="bg-neutral-800 rounded-lg shadow-xl max-w-md w-full p-6">
+                <div class="text-center mb-4">
+                    <div class="inline-block animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-500 mb-3"></div>
+                    <h3 class="text-lg font-medium text-white">Generating AI Versions</h3>
+                    <p class="text-neutral-400 mt-1">Processing batch job...</p>
+                </div>
+
+                <div class="w-full bg-neutral-700 rounded-full h-4 mb-3">
+                    <div
+                        class="bg-indigo-600 h-4 rounded-full transition-all duration-300 ease-out"
+                        :style="{ width: `${(batchAIProgress.completed / batchAIProgress.total) * 100}%` }"
+                    ></div>
+                </div>
+
+                <div class="text-center text-sm text-neutral-300 mb-4">
+                    <span>{{ batchAIProgress.completed }} of {{ batchAIProgress.total }} items processed</span>
+                </div>
+
+                <div class="max-h-40 overflow-y-auto space-y-2 text-xs">
+                    <div v-for="(result, index) in batchAIProgress.processedItems" :key="index" class="flex items-center justify-between p-2 bg-neutral-700/50 rounded">
+                        <span class="text-neutral-300 truncate mr-2">{{ result.title }}</span>
+                        <span v-if="result.success" class="text-green-400">Success</span>
+                        <span v-else class="text-red-400" :title="result.error">Error</span>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 </template>
 
@@ -1174,6 +1354,14 @@ interface FeedItem {
     suggestedTags?: string[];
     suggestedCategories?: string[];
     relevance?: number;
+    aiTitle?: string;
+    aiContent?: string;
+    aiTags?: string;
+    aiCategories?: string;
+    aiModel?: string;
+    aiPromptId?: string;
+    aiFeatureImage?: string;
+    aiStatus?: string;
 }
 
 interface Category {
@@ -1233,6 +1421,25 @@ const editedContent = ref<string | null>(null);
 const promptsList = ref<any[]>([]);
 const selectedPrompt = ref<string>('default');
 const loadingPrompts = ref<boolean>(false);
+
+const selectedModel = ref<string>('gemini');
+const availableModels = [
+    { label: 'Gemini', value: 'gemini' },
+    { label: 'ChatGPT', value: 'chatgpt' },
+    { label: 'Grok', value: 'grok' },
+    { label: 'DeepSeek', value: 'deepseek' }
+];
+
+const selectedItems = ref<string[]>([]);
+const selectAll = ref<boolean>(false);
+const showBatchAIDialog = ref<boolean>(false);
+const batchAILoading = ref<boolean>(false);
+const batchAIProgress = ref<any>({
+    completed: 0,
+    total: 0,
+    currentItem: '',
+    processedItems: []
+});
 
 // Helper function to remove accents
 const removeAccents = (str: string): string => {
@@ -1397,6 +1604,39 @@ const openPreview = (item: FeedItem): void => {
     editedContent.value = null;
     document.body.style.overflow = 'hidden';
 
+    // Load saved AI content if it exists
+    if (item.aiTitle && item.aiContent && item.aiStatus === 'completed') {
+        aiContent.value = {
+            ...item,
+            title: item.aiTitle,
+            content: item.aiContent,
+            suggestedTags: item.aiTags ? JSON.parse(item.aiTags) : [],
+            suggestedCategories: item.aiCategories ? JSON.parse(item.aiCategories) : []
+        };
+        
+        if (aiContent.value.suggestedTags && aiContent.value.suggestedTags.length > 0) {
+            selectedTags.value = [...aiContent.value.suggestedTags];
+        }
+
+        if (aiContent.value.suggestedCategories && aiContent.value.suggestedCategories.length > 0) {
+           // Logic to match categories (already in generateAIContent, maybe refactor later)
+        }
+        
+        if (item.aiModel) {
+            selectedModel.value = item.aiModel;
+        }
+
+        if (item.aiPromptId) {
+            selectedPrompt.value = item.aiPromptId;
+        }
+
+        if (item.aiFeatureImage || item.featureImage) {
+            coverImage.value = item.aiFeatureImage || item.featureImage || null;
+        }
+    } else if (item.featureImage) {
+        coverImage.value = item.featureImage || null;
+    }
+
     // Load prompts when opening the preview
     loadPrompts();
 };
@@ -1429,20 +1669,18 @@ const saveEditedContent = (): void => {
 const generateAIContent = async (): Promise<void> => {
     if (!previewItem.value || aiLoading.value) return;
 
+    const currentItemId = previewItem.value.id;
+
     try {
         aiLoading.value = true;
         aiError.value = null;
 
         const contentToProcess = editedContent.value || previewItem.value.content;
 
-        const itemToProcess = {
-            ...previewItem.value,
-            content: contentToProcess
-        };
-
-        const jobStartResponse = await feedClient.raw.startAIJob(previewItem.value.id, {
+        const jobStartResponse = await feedClient.raw.startAIJob(currentItemId, {
             content: contentToProcess,
-            promptId: selectedPrompt.value
+            promptId: selectedPrompt.value,
+            model: selectedModel.value
         });
         const jobId = jobStartResponse.jobId;
 
@@ -1454,14 +1692,18 @@ const generateAIContent = async (): Promise<void> => {
 
         const checkJobStatus = async () => {
             try {
+                // Check if item has changed or preview closed
+                if (!previewItem.value || previewItem.value.id !== currentItemId) {
+                    aiLoading.value = false;
+                    return;
+                }
+
                 const jobStatus = await feedClient.raw.getAIJobStatus(jobId);
 
-                // Check if response is an error
                 if (jobStatus && jobStatus.error) {
                     throw new Error(jobStatus.message || 'Failed to check job status');
                 }
 
-                // Check if jobStatus is null or undefined
                 if (!jobStatus) {
                     throw new Error('No response from server. Job may not exist.');
                 }
@@ -1469,7 +1711,7 @@ const generateAIContent = async (): Promise<void> => {
                 if (jobStatus.status === 'completed') {
                     const response = jobStatus.result;
 
-                    if (response && response.title && response.content && previewItem.value) {
+                    if (response && response.title && response.content && previewItem.value && previewItem.value.id === currentItemId) {
                         aiContent.value = {
                             ...previewItem.value,
                             title: response.title,
@@ -1480,6 +1722,19 @@ const generateAIContent = async (): Promise<void> => {
 
                         if (response.suggestedTags && response.suggestedTags.length > 0) {
                             selectedTags.value = [...response.suggestedTags];
+                        }
+
+                        // Use aiFeatureImage from response if available, or fall back to original
+                        const imgToUse = response.aiFeatureImage || previewItem.value.featureImage;
+                        
+                        if (imgToUse) {
+                            try {
+                                coverImage.value = imgToUse;
+                                showNotification('info', 'Usando imagem de capa');
+                            } catch (imgErr) {
+                                console.error('Erro ao definir imagem:', imgErr);
+                                coverImage.value = null;
+                            }
                         }
 
                         if (response.suggestedCategories && response.suggestedCategories.length > 0 && categories.value.length > 0) {
@@ -1519,20 +1774,6 @@ const generateAIContent = async (): Promise<void> => {
                                 .map(category => category.id);
 
                             selectedCategories.value = [...new Set([...selectedCategories.value, ...matchingCategoryIds])];
-                        }
-
-                        if (previewItem.value.featureImage) {
-                            try {
-                                // Definir a imagem original diretamente
-                                coverImage.value = previewItem.value.featureImage;
-                                showNotification('info', 'Usando imagem original do conteúdo');
-                            } catch (imgErr) {
-                                console.error('Erro ao definir imagem:', imgErr);
-                                coverImage.value = null;
-                            }
-                        } else {
-                            console.log('Nenhuma imagem de capa disponível no item original');
-                            coverImage.value = null;
                         }
 
                         aiLoading.value = false;
@@ -2467,6 +2708,132 @@ const startBulkDelete = async (): Promise<void> => {
         bulkDeleteLoading.value = false;
         showBulkDeleteConfirmation.value = false;
         closeBulkDeleteDialog();
+    }
+};
+
+const toggleSelectAll = (): void => {
+    if (selectAll.value) {
+        selectedItems.value = feedItems.value.map(item => item.id);
+    } else {
+        selectedItems.value = [];
+    }
+};
+
+const openBatchAIDialog = (): void => {
+    if (selectedItems.value.length === 0) {
+        showNotification('warning', 'Please select at least one item.');
+        return;
+    }
+    loadPrompts();
+    showBatchAIDialog.value = true;
+};
+
+const closeBatchAIDialog = (): void => {
+    showBatchAIDialog.value = false;
+};
+
+const startBatchAI = async (): Promise<void> => {
+    if (selectedItems.value.length === 0 || batchAILoading.value) return;
+
+    try {
+        showBatchAIDialog.value = false;
+        batchAILoading.value = true;
+        batchAIProgress.value = {
+            completed: 0,
+            total: selectedItems.value.length,
+            currentItem: '',
+            processedItems: []
+        };
+
+        const response = await feedClient.raw.startBatchAIJob({
+            ids: selectedItems.value,
+            model: selectedModel.value,
+            promptId: selectedPrompt.value
+        });
+
+        const jobIds = response.jobIds;
+        
+        if (!jobIds || jobIds.length === 0) {
+             throw new Error('Failed to start batch AI jobs');
+        }
+
+        showNotification('info', `Batch AI processing started for ${jobIds.length} items.`);
+        
+        let completedCount = 0;
+        const totalCount = jobIds.length;
+        const activeJobs = new Set(jobIds);
+
+        const pollJobs = async () => {
+             for (const jobId of activeJobs) {
+                 try {
+                     const status = await feedClient.raw.getAIJobStatus(jobId);
+                     if (status.status === 'completed' || status.status === 'error') {
+                         completedCount++;
+                         activeJobs.delete(jobId);
+                         batchAIProgress.value.completed = completedCount;
+                         
+                         // Try to find the title for the progress log
+                         batchAIProgress.value.processedItems.push({
+                             title: jobId,
+                             success: status.status === 'completed',
+                             error: status.error
+                         });
+                     }
+                 } catch (e) {
+                     console.error(`Error polling job ${jobId}`, e);
+                 }
+             }
+
+             if (activeJobs.size > 0) {
+                 setTimeout(pollJobs, 3000);
+             } else {
+                 batchAILoading.value = false;
+                 showNotification('success', 'Batch AI processing completed.');
+                 refreshData();
+             }
+        };
+
+        pollJobs();
+
+    } catch (err) {
+        console.error('Batch AI error:', err);
+        batchAILoading.value = false;
+        showNotification('error', 'Failed to start batch AI processing');
+    }
+};
+
+const saveAIResult = async (): Promise<void> => {
+    if (!previewItem.value || !aiContent.value) return;
+    
+    try {
+        await feedClient.raw.updateRaw(previewItem.value.id, {
+            aiTitle: aiContent.value.title,
+            aiContent: aiContent.value.content,
+            aiTags: JSON.stringify(aiContent.value.suggestedTags || []),
+            aiCategories: JSON.stringify(aiContent.value.suggestedCategories || []),
+            aiModel: selectedModel.value,
+            aiStatus: 'completed'
+        });
+        showNotification('success', 'AI Version saved successfully!');
+        
+        // Update local state so it shows as saved in the list
+        if (previewItem.value) {
+            previewItem.value.aiTitle = aiContent.value.title;
+            previewItem.value.aiContent = aiContent.value.content;
+            previewItem.value.aiStatus = 'completed';
+            previewItem.value.aiModel = selectedModel.value;
+        }
+        
+        const listItem = feedItems.value.find(i => i.id === previewItem.value?.id);
+        if (listItem && aiContent.value) {
+            listItem.aiTitle = aiContent.value.title;
+            listItem.aiContent = aiContent.value.content;
+            listItem.aiStatus = 'completed';
+            listItem.aiModel = selectedModel.value;
+        }
+    } catch (err) {
+        console.error('Failed to save AI result:', err);
+        showNotification('error', 'Failed to save AI result');
     }
 };
 

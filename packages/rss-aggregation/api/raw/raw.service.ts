@@ -24,6 +24,7 @@ interface AIJob {
     startTime: Date;
     customContent?: string;
     promptId?: string;
+    model?: string;
 }
 
 @Service()
@@ -65,9 +66,10 @@ export class RawService {
      * @param id The ID of the raw feed item
      * @param customContent Optional custom content to process instead of the original
      * @param promptId Optional prompt ID to use for the AI job
+     * @param model Optional AI model to use
      * @returns Job ID for tracking the processing status
      */
-    async startAIJob(id: string, customContent?: string, promptId?: string): Promise<string> {
+    async startAIJob(id: string, customContent?: string, promptId?: string, model?: string): Promise<string> {
         const FeedRawEntity = Repository.getEntity("FeedRawEntity");
         const raw = await Repository.findOne(FeedRawEntity, { id });
 
@@ -78,13 +80,32 @@ export class RawService {
         // Generate unique job ID
         const jobId = `ai-job-${Date.now()}-${Math.random().toString(36).substring(2, 10)}`;
 
+        let jobPromptId = promptId;
+        let jobModel = model;
+
+        // Fetch channel defaults if prompt or model is missing
+        if (!jobPromptId || jobPromptId === 'default' || !jobModel) {
+            const FeedChannelsEntity = Repository.getEntity("FeedChannelsEntity");
+            const channel: any = await Repository.findOne(FeedChannelsEntity, { id: raw.channel });
+
+            if (channel) {
+                if (!jobModel) jobModel = channel.aiModel;
+                if (!jobPromptId || jobPromptId === 'default') jobPromptId = channel.aiPromptId;
+            }
+        }
+
+        // Final fallbacks
+        if (!jobModel) jobModel = 'gemini';
+        if (!jobPromptId || jobPromptId === 'default') jobPromptId = 'default';
+
         const job: AIJob = {
             id: jobId,
             rawId: id,
             status: 'pending',
             startTime: new Date(),
             customContent,
-            promptId
+            promptId: jobPromptId,
+            model: jobModel
         };
 
         this.aiJobs.set(jobId, job);
@@ -128,39 +149,45 @@ export class RawService {
                 category: raw.category
             };
 
+            const customPrompt = await promptService.getDefaultPrompt(job.promptId);
+
             const prompt = `
-            You are a content generator for a news aggregation platform that uses the TipTap editor.
+            You are a professional content generator for a news aggregation platform.
+            
+            Your task is to transform the provided content following these strictly hierarchical rules:
+            
+            1. LANGUAGE:
+               - Translate all content to: ${language}
+            
+            2. INSTRUCTIONS / STYLE:
+               ${customPrompt}
+            
+            3. FORMATTING RULES (TipTap compatible HTML):
+               - Use <h2> for section headers
+               - Use <p> for paragraphs
+               - Use <ul>/<li> for lists
+               - DO NOT write any conclusion or summary paragraph. The article should feel unfinished and open-ended.
+               - DO NOT wrap up the discussion or provide closing thoughts.
+               - ONLY use images that exist in the original post - DO NOT create or generate new images that don't exist
+            
+            4. INPUT DATA:
+               Title: ${contentToProcess.title}
+               Category: ${contentToProcess.category || 'General'}
+               Content: ${contentToProcess.content}
+            
+            5. RETURN FORMAT:
+               Return ONLY a JSON object with this exact structure:
+               {
+                 "title": "translated and rewritten title (max 100 chars)",
+                 "content": "HTML-formatted content",
+                 "suggestedTags": ["tag1", "tag2", "tag3", "tag4", "tag5"],
+                 "suggestedCategories": ["categoryName1", "categoryName2"]
+               }`;
 
-            Please transform the following content by:
-            1. Translating it to ${language}
-            ${await promptService.getDefaultPrompt(job.promptId)}
-
-            IMPORTANT: DO NOT write any conclusion or summary paragraph. The article should feel unfinished and open-ended.
-            It should not wrap up the discussion or provide closing thoughts. Avoid phrases like "In conclusion," "To summarize,"
-            "Finally," or any language that suggests the article is ending.
-
-            - ONLY use images that exist in the original post - DO NOT create or generate new images that don't exist
-
-            Here is the content to transform:
-
-            Title: ${contentToProcess.title}
-
-            Category: ${contentToProcess.category || 'General'}
-
-            Content: ${contentToProcess.content}
-
-            Return the transformed content in JSON format with the following fields:
-            {
-              "title": "translated and rewritten title",
-              "content": "HTML-formatted content with proper tags",
-              "suggestedTags": ["tag1", "tag2", "tag3", "tag4", "tag5"],
-              "suggestedCategories": ["categoryName1", "categoryName2"]
-            }`;
-
-            this.logger.log(`Processing AI job ${jobId} for raw ${job.rawId}`);
+            this.logger.log(`Processing AI job ${jobId} for raw ${job.rawId} using model ${job.model || 'default'}`);
             
             this.logger.log(`Calling AI service generateContent for job ${jobId}...`);
-            const generatedText = await this.aiContentService.generateContent(prompt);
+            const generatedText = await this.aiContentService.generateContent(prompt, job.model);
             const aiServiceTime = Date.now() - jobStartTime;
             this.logger.log(`AI service returned response for job ${jobId} after ${aiServiceTime}ms`);
 
@@ -221,38 +248,34 @@ export class RawService {
 
                 this.logger.log(`Generating continuation text for raw feed item ${job.rawId}`);
 
+                const customPromptContinuation = await promptService.getDefaultPrompt(job.promptId);
+
                 const continuationPrompt = `
-                You are a content generator for a news aggregation platform that uses the TipTap editor.
-
-                I've already generated part of the content below, but I need you to continue this article with more details, examples, or insights. Keep the same style and flow as the existing content.
-
-                1. Translating it to ${language}
-
-                - ONLY use images that exist in the original post - DO NOT create or generate new images that don't exist
-
-                Original prompt:
-                ${await promptService.getRandomPrompt(job.promptId)}
-
+                You are a professional content generator for a news aggregation platform.
+                
+                I have already generated the first part of an article. I need you to continue it naturally, maintaining the same style and flow.
+                
+                RULES:
+                1. LANGUAGE: Keep using ${language}
+                2. STYLE INSTRUCTIONS: ${customPromptContinuation}
+                3. FORMATTING: Use TipTap compatible HTML (<h2>, <p>, <ul>).
+                4. NO CONCLUSIONS: DO NOT write any conclusion, summary, or closing thoughts.
+                5. IMAGES: ONLY use images that already exist. DO NOT generate new ones.
+                6. FLOW: Continue directly from where the current text ends.
+                
+                METADATA:
                 Original Title: ${contentToProcess.title}
                 Category: ${contentToProcess.category || 'General'}
-
-                Here's the content already generated:
+                
+                CURRENT CONTENT (STAY IN THIS STYLE):
                 ${parsedContent.content}
-
-                Please continue from where this left off, adding depth, details, and value. Make it feel like a natural extension.
-                Your continuation should be at least as long as the original text.
-
-                IMPORTANT: DO NOT write any conclusion or summary paragraph. The article should feel unfinished and open-ended.
-                It should not wrap up the discussion or provide closing thoughts. Avoid phrases like "In conclusion," "To summarize,"
-                "Finally," or any language that suggests the article is ending.
-
-                Return only the continuation in JSON format with the following field:
+                
+                Return ONLY a JSON object with this field:
                 {
-                  "continuation": "HTML-formatted content with proper tags that continues the existing text"
-                }
-                `;
+                  "continuation": "The continuation HTML content"
+                }`;
 
-                const continuationText = await this.aiContentService.generateContent(continuationPrompt);
+                const continuationText = await this.aiContentService.generateContent(continuationPrompt, job.model);
 
                 if (!continuationText) {
                     this.logger.error(`No continuation text generated for raw feed item ${job.rawId}, using only the original text`);
@@ -327,7 +350,19 @@ export class RawService {
                 job.status = 'completed';
                 this.aiJobs.set(jobId, job);
 
-                this.logger.log(`AI job ${jobId} completed successfully`);
+                // Save to database
+                await Repository.updateOne(FeedRawEntity, { id: job.rawId }, {
+                    aiTitle: parsedContent.title,
+                    aiContent: parsedContent.content,
+                    aiTags: JSON.stringify(parsedContent.suggestedTags || []),
+                    aiCategories: JSON.stringify(parsedContent.suggestedCategories || []),
+                    aiModel: job.model || Config.get("blog.aiService", "gemini"),
+                    aiPromptId: job.promptId,
+                    aiFeatureImage: raw.featureImage,
+                    aiStatus: 'completed'
+                });
+
+                this.logger.log(`AI job ${jobId} completed successfully and saved to DB`);
             } catch (parseError) {
                 const errorMessage = parseError instanceof Error ? parseError.message : String(parseError);
                 this.logger.error(`Failed to parse AI generated content for job ${jobId}: ${errorMessage}`);
@@ -373,7 +408,31 @@ export class RawService {
             
             job.status = 'error';
             this.aiJobs.set(jobId, job);
+
+            // Save error status to database
+            const FeedRawEntity = Repository.getEntity("FeedRawEntity");
+            await Repository.updateOne(FeedRawEntity, { id: job.rawId }, {
+                aiStatus: 'error'
+            });
         }
+    }
+
+    /**
+     * Start a batch of AI content generation jobs
+     * @param ids The IDs of the raw feed items
+     * @param model Optional AI model to use
+     * @param promptId Optional prompt ID to use for the AI jobs
+     * @returns Array of job IDs
+     */
+    async startBatchAIJob(ids: string[], model?: string, promptId?: string): Promise<string[]> {
+        const jobIds: string[] = [];
+        
+        for (const id of ids) {
+            const jobId = await this.startAIJob(id, undefined, promptId, model);
+            jobIds.push(jobId);
+        }
+        
+        return jobIds;
     }
 
     /**
@@ -432,7 +491,7 @@ export class RawService {
      * @param customContent Optional custom content to process instead of the original
      * @returns The AI processed raw feed item
      */
-    async getAIRaw(id: string, customContent?: string, promptId?: string) {
+    async getAIRaw(id: string, customContent?: string, promptId?: string, model?: string) {
         try {
             const promptService:any = Application.resolveProvider(PromptsServiceTools);
             const language = Config.get("blog.language");
@@ -530,7 +589,7 @@ export class RawService {
                 }
                 `;
 
-                const continuationText = await this.aiContentService.generateContent(continuationPrompt);
+                const continuationText = await this.aiContentService.generateContent(continuationPrompt, model);
 
                 if (!continuationText) {
                     this.logger.error(`No continuation text generated for raw feed item ${id}, using only the original text`);

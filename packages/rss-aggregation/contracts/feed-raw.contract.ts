@@ -134,4 +134,54 @@ export class FeedRawContract extends AbstractContract {
         defaultValue: 0,
     })
     relevance!: number;
+
+    @ContractField({
+        protoType: 'string',
+        nullable: true,
+    })
+    aiTitle?: string;
+
+    @ContractField({
+        protoType: 'text',
+        nullable: true,
+    })
+    aiContent?: string;
+
+    @ContractField({
+        protoType: 'string',
+        nullable: true,
+    })
+    aiTags?: string;
+
+    @ContractField({
+        protoType: 'string',
+        nullable: true,
+    })
+    aiCategories?: string;
+
+    @ContractField({
+        protoType: 'string',
+        nullable: true,
+    })
+    aiModel?: string;
+
+    @ContractField({
+        protoType: 'string',
+        nullable: true,
+    })
+    aiPromptId?: string;
+
+    @ContractField({
+        protoType: 'string',
+        nullable: true,
+    })
+    aiFeatureImage?: string;
+
+    @ContractField({
+        protoType: 'string',
+        nullable: false,
+        index: true,
+        defaultValue: 'none',
+    })
+    aiStatus!: string;
 }

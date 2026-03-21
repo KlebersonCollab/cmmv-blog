@@ -145,14 +145,14 @@ export class PromptsServiceTools {
      * @returns The default prompt
      */
     async getDefaultPrompt(promptId: string){
-        const promptsOverride = Config.get<boolean>("blog.promptsOverride", false);
-
-        if(promptId){
+        if(promptId && promptId !== 'default'){
             const prompt = await this.getPromptById(promptId);
 
-            if(prompt)
+            if(prompt && prompt !== this.defaultPrompt)
                 return prompt;
         }
+
+        const promptsOverride = Config.get<boolean>("blog.promptsOverride", false);
 
         if(promptsOverride)
             return await this.getRandomPrompt(promptId);
@@ -165,11 +165,10 @@ export class PromptsServiceTools {
      * @returns A random prompt from the database
      */
     async getRandomPrompt(promptId: string){
-
-        if(promptId){
+        if(promptId && promptId !== 'default'){
             const prompt = await this.getPromptById(promptId);
 
-            if(prompt)
+            if(prompt && prompt !== this.defaultPrompt)
                 return prompt;
         }
 
@@ -203,6 +202,6 @@ export class PromptsServiceTools {
         const prompt = await Repository.findOne(PromptsEntity, {
             id: promptId
         });
-        return prompt ? prompt.prompt : this.defaultPrompt;
+        return prompt ? prompt.prompt : null;
     }
 }

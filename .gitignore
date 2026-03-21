@@ -410,3 +410,9 @@ ads.txt
 data
 .cursor
 .husky
+
+.agent
+.agent/
+.agent/*
+.agent/**
+.agent/**/**

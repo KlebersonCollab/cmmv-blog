@@ -13,8 +13,8 @@ export class AIContentService {
         private readonly deepseekService: DeepSeekService
     ) {}
 
-    async generateContent(prompt: string) {
-        const aiService = Config.get("blog.aiService", "gemini");
+    async generateContent(prompt: string, service?: string) {
+        const aiService = service || Config.get("blog.aiService", "gemini");
 
         switch(aiService) {
             case "gemini":

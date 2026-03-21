@@ -25,13 +25,13 @@ export class RawController {
     @Post("getAIRaw/:id", {exclude: true })
     @Auth("feedraw:get")
     async getAIRaw(@Param("id") id: string, @Body() data?: any) {
-        return await this.rawService.getAIRaw(id, data?.content, data?.promptId);
+        return await this.rawService.getAIRaw(id, data?.content, data?.promptId, data?.model);
     }
 
     @Post("startAIJob/:id", {exclude: true })
     @Auth("feedraw:get")
     async startAIJob(@Param("id") id: string, @Body() data?: any) {
-        const jobId = await this.rawService.startAIJob(id, data?.content, data?.promptId);
+        const jobId = await this.rawService.startAIJob(id, data?.content, data?.promptId, data?.model);
         return { jobId };
     }
 
@@ -100,5 +100,15 @@ export class RawController {
     @Auth("feedraw:update")
     async classifyRawsWithAI() {
         return await this.rawService.classifyRawsWithAI();
+    }
+
+    @Post("startBatchAIJob", {exclude: true })
+    @Auth("feedraw:get")
+    async startBatchAIJob(@Body() data: any) {
+        if (!data?.ids || !Array.isArray(data.ids)) {
+            throw new HttpException("IDs array is required", HttpStatus.BAD_REQUEST);
+        }
+        const jobIds = await this.rawService.startBatchAIJob(data.ids, data?.model, data?.promptId);
+        return { jobIds };
     }
 }
