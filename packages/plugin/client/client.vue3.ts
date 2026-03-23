@@ -630,15 +630,25 @@ export const createLdJSON = (type: string, data: any, settings: any) => {
                 ]
             };
         case "breadcrumb":
+            const baseUrl = getEnv('VITE_WEBSITE_URL') || settings?.['blog.url'] || '';
+            const baseUrlClean = baseUrl.endsWith('/') ? baseUrl.slice(0, -1) : baseUrl;
+
             return {
                 "@context": "https://schema.org",
                 "@type": "BreadcrumbList",
-                "itemListElement": data.map((item: any, index: number) => ({
-                    "@type": "ListItem",
-                    "position": index + 1,
-                    "name": item.name,
-                    "item": item.url
-                }))
+                "itemListElement": data.map((item: any, index: number) => {
+                    let absoluteUrl = item.url;
+                    if (absoluteUrl?.startsWith('/')) {
+                        absoluteUrl = `${baseUrlClean}${absoluteUrl}`;
+                    }
+                    
+                    return {
+                        "@type": "ListItem",
+                        "position": index + 1,
+                        "name": item.name,
+                        "item": absoluteUrl
+                    };
+                })
             };
     }
 }
