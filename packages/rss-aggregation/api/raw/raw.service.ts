@@ -117,6 +117,144 @@ export class RawService {
     }
 
     /**
+     * Parse AI response robustly
+     * @param text The raw text from the AI
+     * @returns Parsed JSON object
+     */
+    private parseAIResponse(text: string): any {
+        if (!text) throw new Error("Empty AI response");
+
+        // Strategy 1: Clean and parse directly
+        let cleaned = text.trim();
+        
+        try {
+            return JSON.parse(cleaned);
+        } catch (e) {
+            // Strategy 2: Extract JSON from markdown or generic text
+            let jsonContent = "";
+            
+            // Try markdown code blocks first
+            const codeBlockMatch = cleaned.match(/```(?:json)?\s*(\{[\s\S]*?\})\s*```/);
+            if (codeBlockMatch) {
+                jsonContent = codeBlockMatch[1];
+            } else {
+                // Try to find the first { and last }
+                const firstBrace = cleaned.indexOf('{');
+                const lastBrace = cleaned.lastIndexOf('}');
+                if (firstBrace >= 0 && lastBrace > firstBrace) {
+                    jsonContent = cleaned.substring(firstBrace, lastBrace + 1);
+                }
+            }
+
+            if (jsonContent) {
+                try {
+                    return JSON.parse(jsonContent.trim());
+                } catch (innerError) {
+                    this.logger.log("Standard JSON parse failed, attempting regex extraction fallback");
+                    
+                    // Strategy 3: Regex fallback for common fields
+                    const result: any = {};
+                    
+                    const titleMatch = jsonContent.match(/"title"\s*:\s*"([\s\S]*?)"\s*(?:,|\n|\s*\})/);
+                    const contentMatch = jsonContent.match(/"content"\s*:\s*"([\s\S]*?)"\s*(?:,|\n|\s*\})/);
+                    const tagsMatch = jsonContent.match(/"suggestedTags"\s*:\s*(\[[\s\S]*?\])/);
+                    const categoriesMatch = jsonContent.match(/"suggestedCategories"\s*:\s*(\[[\s\S]*?\])/);
+                    const continuationMatch = jsonContent.match(/"continuation"\s*:\s*"([\s\S]*?)"\s*(?:,|\n|\s*\})/);
+
+                    if (titleMatch) result.title = titleMatch[1];
+                    if (contentMatch) result.content = contentMatch[1];
+                    if (continuationMatch) result.continuation = continuationMatch[1];
+                    
+                    if (tagsMatch) {
+                        try { result.suggestedTags = JSON.parse(tagsMatch[1]); } 
+                        catch { 
+                            result.suggestedTags = tagsMatch[1]
+                                .replace(/[\[\]"]/g, '')
+                                .split(',')
+                                .map(t => t.trim())
+                                .filter(t => t.length > 0);
+                        }
+                    }
+                    
+                    if (categoriesMatch) {
+                        try { result.suggestedCategories = JSON.parse(categoriesMatch[1]); } 
+                        catch {
+                            result.suggestedCategories = categoriesMatch[1]
+                                .replace(/[\[\]"]/g, '')
+                                .split(',')
+                                .map(c => c.trim())
+                                .filter(c => c.length > 0);
+                        }
+                    }
+
+                    if (result.title || result.content || result.continuation) {
+                        return result;
+                    }
+
+                    throw innerError;
+                }
+            }
+
+            throw new Error("No valid JSON found in AI response");
+        }
+    }
+
+    /**
+     * Matches suggested category names with existing categories in the database
+     * @param suggestedNames Array of suggested category names from AI
+     * @returns Array of matched category names
+     */
+    private async matchSuggestedCategories(suggestedNames: string[]): Promise<string[]> {
+        if (!suggestedNames || !Array.isArray(suggestedNames) || suggestedNames.length === 0) {
+            return [];
+        }
+
+        try {
+            const CategoryEntity = Repository.getEntity("CategoriesEntity");
+            const allCategories = await Repository.findAll(CategoryEntity, { active: true });
+            
+            if (!allCategories || !allCategories.data) {
+                return [];
+            }
+
+            const matchedNames: string[] = [];
+            const existingCategories = allCategories.data;
+
+            for (const suggestedName of suggestedNames) {
+                if (typeof suggestedName !== 'string') continue;
+                
+                const normalizedSuggested = suggestedName.toLowerCase().trim();
+                
+                // Try exact match first
+                const exactMatch = (existingCategories as any[]).find((c: any) => 
+                    c.name.toLowerCase().trim() === normalizedSuggested ||
+                    c.slug.toLowerCase().trim() === normalizedSuggested
+                );
+
+                if (exactMatch) {
+                    matchedNames.push(exactMatch.name);
+                } else {
+                    // Try partial match
+                    const partialMatch = (existingCategories as any[]).find((c: any) => 
+                        normalizedSuggested.includes(c.name.toLowerCase().trim()) ||
+                        c.name.toLowerCase().trim().includes(normalizedSuggested)
+                    );
+                    
+                    if (partialMatch) {
+                        matchedNames.push(partialMatch.name);
+                    }
+                }
+            }
+
+            // Remove duplicates
+            return [...new Set(matchedNames)];
+        } catch (error) {
+            this.logger.error(`Error matching suggested categories: ${error}`);
+            return [];
+        }
+    }
+
+    /**
      * Process an AI job asynchronously
      * @param jobId The ID of the job to process
      */
@@ -176,7 +314,7 @@ export class RawService {
                Content: ${contentToProcess.content}
             
             5. RETURN FORMAT:
-               Return ONLY a JSON object with this exact structure:
+               Return ONLY a JSON object with this exact structure. Ensure all special characters in strings are properly escaped for JSON.parse(), especially double quotes and newlines:
                {
                  "title": "translated and rewritten title (max 100 chars)",
                  "content": "HTML-formatted content",
@@ -199,46 +337,14 @@ export class RawService {
             this.logger.log(`AI response received for job ${jobId}, length: ${generatedText.length} characters`);
 
             try {
-                let jsonContent: string | null = null;
                 let parsedContent: any = null;
                 
-                // Try multiple strategies to extract and parse JSON
-                // Strategy 1: Try to parse the entire response as JSON
                 try {
-                    parsedContent = JSON.parse(generatedText.trim());
-                    this.logger.log(`Successfully parsed entire response as JSON for job ${jobId}`);
-                } catch {
-                    // Strategy 2: Extract JSON using regex (greedy match for nested objects)
-                    const jsonMatch = generatedText.match(/\{[\s\S]*\}/);
-                    if (jsonMatch) {
-                        jsonContent = jsonMatch[0];
-                    } else {
-                        // Strategy 3: Try to find JSON between code blocks
-                        const codeBlockMatch = generatedText.match(/```(?:json)?\s*(\{[\s\S]*?\})\s*```/);
-                        if (codeBlockMatch) {
-                            jsonContent = codeBlockMatch[1];
-                        } else {
-                            // Strategy 4: Find first { and last } (for nested JSON)
-                            const firstBrace = generatedText.indexOf('{');
-                            const lastBrace = generatedText.lastIndexOf('}');
-                            if (firstBrace >= 0 && lastBrace > firstBrace) {
-                                jsonContent = generatedText.substring(firstBrace, lastBrace + 1);
-                            }
-                        }
-                    }
-
-                    if (jsonContent) {
-                        // Clean up JSON content
-                        jsonContent = jsonContent.trim();
-                        // Remove markdown code blocks if present
-                        jsonContent = jsonContent.replace(/^```(?:json)?\s*/gm, '').replace(/\s*```$/gm, '').trim();
-                        
-                        this.logger.log(`Attempting to parse extracted JSON for job ${jobId}, JSON length: ${jsonContent.length}`);
-                        parsedContent = JSON.parse(jsonContent);
-                    } else {
-                        this.logger.error(`No JSON content found in AI response. Response preview: ${generatedText.substring(0, 500)}`);
-                        throw new Error('No JSON content found in AI response');
-                    }
+                    parsedContent = this.parseAIResponse(generatedText);
+                    this.logger.log(`Successfully parsed AI response for job ${jobId}`);
+                } catch (parseErr) {
+                    this.logger.error(`Critical parsing error for job ${jobId}: ${parseErr}`);
+                    throw parseErr;
                 }
 
                 if (parsedContent.title && parsedContent.title.length > 100) {
@@ -270,7 +376,7 @@ export class RawService {
                 CURRENT CONTENT (STAY IN THIS STYLE):
                 ${parsedContent.content}
                 
-                Return ONLY a JSON object with this field:
+                Return ONLY a JSON object with this field. Ensure all special characters in strings are properly escaped for JSON.parse():
                 {
                   "continuation": "The continuation HTML content"
                 }`;
@@ -306,11 +412,7 @@ export class RawService {
                         }
 
                         if (continuationJsonContent) {
-                            // Clean up JSON content
-                            continuationJsonContent = continuationJsonContent.trim();
-                            continuationJsonContent = continuationJsonContent.replace(/^```(?:json)?\s*/gm, '').replace(/\s*```$/gm, '').trim();
-                            
-                            const parsedContinuation = JSON.parse(continuationJsonContent);
+                            const parsedContinuation = this.parseAIResponse(continuationJsonContent);
 
                             if (parsedContinuation.continuation) {
                                 const lastClosingTagMatch = parsedContent.content.match(/<\/[^>]+>$/);
@@ -363,6 +465,18 @@ export class RawService {
                 });
 
                 this.logger.log(`AI job ${jobId} completed successfully and saved to DB`);
+
+                // Automatically match and select categories if found
+                if (parsedContent.suggestedCategories && parsedContent.suggestedCategories.length > 0) {
+                    const matchedCategories = await this.matchSuggestedCategories(parsedContent.suggestedCategories);
+                    if (matchedCategories.length > 0) {
+                        await Repository.updateOne(FeedRawEntity, { id: job.rawId }, {
+                            category: matchedCategories[0], // Use the first best match as the primary category
+                            aiCategories: JSON.stringify(matchedCategories)
+                        });
+                        this.logger.log(`Automatically matched and assigned categories for job ${jobId}: ${matchedCategories.join(', ')}`);
+                    }
+                }
             } catch (parseError) {
                 const errorMessage = parseError instanceof Error ? parseError.message : String(parseError);
                 this.logger.error(`Failed to parse AI generated content for job ${jobId}: ${errorMessage}`);
@@ -372,7 +486,7 @@ export class RawService {
                 job.error = `Failed to parse AI generated content: ${errorMessage}`;
                 this.aiJobs.set(jobId, job);
             }
-        } catch (error) {
+        } catch (error: any) {
             const errorMessage = error instanceof Error ? error.message : String(error);
             const errorName = error instanceof Error ? error.name : 'Unknown';
             const errorStack = error instanceof Error ? error.stack : undefined;
@@ -543,89 +657,102 @@ export class RawService {
             if (!generatedText)
                 throw new Error('No content generated by AI');
 
+            let parsedContent: any = null;
+            
             try {
-                const jsonMatch = generatedText.match(/\{[\s\S]*\}/);
-                const jsonContent = jsonMatch ? jsonMatch[0] : null;
+                parsedContent = this.parseAIResponse(generatedText);
+                this.logger.log(`Successfully parsed AI response for feed item ${id}`);
+            } catch (parseErr) {
+                this.logger.error(`Critical parsing error for feed item ${id}: ${parseErr}`);
+                throw parseErr;
+            }
 
-                if (!jsonContent)
-                    throw new Error('No JSON content found in AI response');
+            if (parsedContent.title && parsedContent.title.length > 100) {
+                parsedContent.title = parsedContent.title.substring(0, 97) + '...';
+                this.logger.log(`Title was truncated to 100 characters for raw feed item ${id}`);
+            }
 
-                const parsedContent = JSON.parse(jsonContent);
+            // Generate continuation text
+            this.logger.log(`Generating continuation text for raw feed item ${id}`);
 
-                if (parsedContent.title && parsedContent.title.length > 100) {
-                    parsedContent.title = parsedContent.title.substring(0, 97) + '...';
-                    this.logger.log(`Title was truncated to 100 characters for raw feed item ${id}`);
-                }
+            const continuationPrompt = `
+            You are a content generator for a news aggregation platform that uses the TipTap editor.
 
-                // Generate continuation text
-                this.logger.log(`Generating continuation text for raw feed item ${id}`);
+            I've already generated part of the content below, but I need you to continue this article with more details, examples, or insights. Keep the same style and flow as the existing content.
 
-                const continuationPrompt = `
-                You are a content generator for a news aggregation platform that uses the TipTap editor.
+            1. Translating it to ${language}
 
-                I've already generated part of the content below, but I need you to continue this article with more details, examples, or insights. Keep the same style and flow as the existing content.
+            Original prompt:
+            ${await promptService.getDefaultPrompt(promptId)}
 
-                1. Translating it to ${language}
+            Original Title: ${contentToProcess.title}
+            Category: ${contentToProcess.category || 'General'}
 
-                Original prompt:
-                ${await promptService.getDefaultPrompt(promptId)}
+            Here's the content already generated:
+            ${parsedContent.content}
 
-                Original Title: ${contentToProcess.title}
-                Category: ${contentToProcess.category || 'General'}
+            Please continue from where this left off, adding depth, details, and value. Make it feel like a natural extension.
+            Your continuation should be at least as long as the original text.
 
-                Here's the content already generated:
-                ${parsedContent.content}
+            IMPORTANT: DO NOT write any conclusion or summary paragraph. The article should feel unfinished and open-ended.
+            It should not wrap up the discussion or provide closing thoughts. Avoid phrases like "In conclusion," "To summarize,"
+            "Finally," or any language that suggests the article is ending.
 
-                Please continue from where this left off, adding depth, details, and value. Make it feel like a natural extension.
-                Your continuation should be at least as long as the original text.
+            Return only the continuation in JSON format with the following field:
+            {
+              "continuation": "HTML-formatted content with proper tags that continues the existing text"
+            }
+            `;
 
-                IMPORTANT: DO NOT write any conclusion or summary paragraph. The article should feel unfinished and open-ended.
-                It should not wrap up the discussion or provide closing thoughts. Avoid phrases like "In conclusion," "To summarize,"
-                "Finally," or any language that suggests the article is ending.
+            const continuationText = await this.aiContentService.generateContent(continuationPrompt, model);
 
-                Return only the continuation in JSON format with the following field:
-                {
-                  "continuation": "HTML-formatted content with proper tags that continues the existing text"
-                }
-                `;
-
-                const continuationText = await this.aiContentService.generateContent(continuationPrompt, model);
-
-                if (!continuationText) {
-                    this.logger.error(`No continuation text generated for raw feed item ${id}, using only the original text`);
-                } else {
+            if (!continuationText) {
+                this.logger.error(`No continuation text generated for raw feed item ${id}, using only the original text`);
+            } else {
+                try {
+                    let continuationJsonContent: string | null = null;
+                    
+                    // Try multiple strategies to extract JSON
                     try {
+                        JSON.parse(continuationText.trim());
+                        continuationJsonContent = continuationText.trim();
+                    } catch {
                         const continuationJsonMatch = continuationText.match(/\{[\s\S]*\}/);
-                        const continuationJsonContent = continuationJsonMatch ? continuationJsonMatch[0] : null;
-
-                        if (continuationJsonContent) {
-                            const parsedContinuation = JSON.parse(continuationJsonContent);
-
-                            if (parsedContinuation.continuation) {
-                                // Combine the original content with the continuation
-                                // Find the last closing tag in the original content
-                                const lastClosingTagMatch = parsedContent.content.match(/<\/[^>]+>$/);
-
-                                if (lastClosingTagMatch) {
-                                    // Insert the continuation before the last closing tag
-                                    const insertPosition = parsedContent.content.lastIndexOf(lastClosingTagMatch[0]);
-                                    parsedContent.content =
-                                        parsedContent.content.substring(0, insertPosition) +
-                                        parsedContinuation.continuation +
-                                        parsedContent.content.substring(insertPosition);
-                                } else {
-                                    // Simply append if we can't find a closing tag
-                                    parsedContent.content += parsedContinuation.continuation;
-                                }
-
-                                this.logger.log(`Successfully combined original content with continuation for raw feed item ${id}`);
+                        if (continuationJsonMatch) {
+                            continuationJsonContent = continuationJsonMatch[0];
+                        } else {
+                            const firstContBrace = continuationText.indexOf('{');
+                            const lastContBrace = continuationText.lastIndexOf('}');
+                            if (firstContBrace >= 0 && lastContBrace > firstContBrace) {
+                                continuationJsonContent = continuationText.substring(firstContBrace, lastContBrace + 1);
                             }
                         }
-                    } catch (continuationError) {
-                        this.logger.error(`Failed to parse continuation text: ${continuationError}`);
-                        this.logger.error(`Using only the original text for raw feed item ${id}`);
                     }
+
+                    if (continuationJsonContent) {
+                        const parsedContinuation = this.parseAIResponse(continuationJsonContent);
+
+                        if (parsedContinuation.continuation) {
+                            const lastClosingTagMatch = parsedContent.content.match(/<\/[^>]+>$/);
+
+                            if (lastClosingTagMatch) {
+                                const insertPosition = parsedContent.content.lastIndexOf(lastClosingTagMatch[0]);
+                                parsedContent.content =
+                                    parsedContent.content.substring(0, insertPosition) +
+                                    parsedContinuation.continuation +
+                                    parsedContent.content.substring(insertPosition);
+                            } else {
+                                parsedContent.content += parsedContinuation.continuation;
+                            }
+
+                            this.logger.log(`Successfully combined original content with continuation for feed item ${id}`);
+                        }
+                    }
+                } catch (continuationError) {
+                    this.logger.error(`Failed to parse continuation text for feed item ${id}: ${continuationError}`);
+                    this.logger.error(`Using only the original text for raw feed item ${id}`);
                 }
+            }
 
                 return {
                     ...raw,
@@ -638,10 +765,7 @@ export class RawService {
                     aiProcessed: true,
                     processedAt: new Date()
                 };
-            } catch (parseError) {
-                this.logger.error(`Failed to parse AI generated content: ${parseError}`);
-                throw new Error('Failed to parse AI generated content');
-            }
+
 
         } catch (error: unknown) {
             this.logger.error(`Error in getAIRaw: ${error instanceof Error ? error.message : String(error)}`);

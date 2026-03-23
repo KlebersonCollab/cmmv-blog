@@ -91,12 +91,6 @@
                     </svg>
                     {{ classifyLoading ? 'Classifying...' : 'Classify with AI' }}
                 </button>
-                <button @click="openBatchAIDialog" class="px-2.5 py-1 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-medium rounded-md transition-colors flex items-center" :disabled="selectedItems.length === 0">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
-                    </svg>
-                    Batch AI Generate ({{ selectedItems.length }})
-                </button>
                 <button @click="refreshData" class="px-2.5 py-1 bg-neutral-700 hover:bg-neutral-600 text-white text-xs font-medium rounded-md transition-colors flex items-center">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
@@ -127,6 +121,7 @@
                                 Bulk Reprocess
                             </button>
                             <button
+                                v-if="selectedItems.length === 0"
                                 @click="openBulkDeleteDialog"
                                 class="w-full px-4 py-2 text-left text-sm text-white hover:bg-neutral-700 flex items-center"
                             >
@@ -134,16 +129,6 @@
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                                 </svg>
                                 Mass Exclusion
-                            </button>
-                            <button
-                                v-if="selectedItems.length > 0"
-                                @click="openBatchAIDialog"
-                                class="w-full px-4 py-2 text-left text-sm text-white hover:bg-neutral-700 flex items-center"
-                            >
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
-                                </svg>
-                                Batch AI Generate ({{ selectedItems.length }})
                             </button>
                         </div>
                     </div>
@@ -194,11 +179,29 @@
                     </span>
                 </div>
                 <div v-if="selectedItems.length > 0" class="flex space-x-2">
-                    <button @click="openBatchAIDialog" class="text-xs bg-indigo-600 hover:bg-indigo-700 text-white px-2 py-1 rounded transition-colors">
+                    <button @click="openBatchAIDialog" class="text-xs bg-indigo-600 hover:bg-indigo-700 text-white px-2 py-1 rounded transition-colors flex items-center">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                        </svg>
                         Batch AI
                     </button>
-                    <button @click="openBulkDeleteDialog" class="text-xs bg-red-600 hover:bg-red-700 text-white px-2 py-1 rounded transition-colors">
-                        Delete Selected
+                    <button v-if="hasReadyAISelection" @click="startBatchCreatePosts" class="text-xs bg-green-600 hover:bg-green-700 text-white px-2 py-1 rounded transition-colors flex items-center">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                        </svg>
+                        Batch Create Post
+                    </button>
+                    <button @click="openBulkReprocessDialog" class="text-xs bg-orange-600 hover:bg-orange-700 text-white px-2 py-1 rounded transition-colors flex items-center">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                        </svg>
+                        Reprocess
+                    </button>
+                    <button @click="openBulkDeleteDialog" class="text-xs bg-red-600 hover:bg-red-700 text-white px-2 py-1 rounded transition-colors flex items-center">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        </svg>
+                        Mass Exclusion
                     </button>
                 </div>
             </div>
@@ -242,6 +245,12 @@
                                     <span v-if="item.category" class="bg-neutral-700 text-neutral-300 px-2 py-0.5 rounded text-xs">
                                         {{ item.category }}
                                     </span>
+                                    <template v-if="item.aiCategories">
+                                        <span v-for="(cat, idx) in parseAICategories(item).slice(1)" :key="idx" 
+                                            class="bg-neutral-700/50 text-neutral-400 px-2 py-0.5 rounded text-xs border border-neutral-600/30">
+                                            {{ cat }}
+                                        </span>
+                                    </template>
                                     <span v-if="item.postRef" class="bg-green-900 text-green-200 px-2 py-0.5 rounded text-xs flex items-center">
                                         <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -297,6 +306,17 @@
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                                 </svg>
                                 {{ processingItems[item.id] ? 'Processing...' : 'Reprocess' }}
+                            </button>
+                            <button
+                                v-if="item.aiStatus === 'completed' && !item.postRef"
+                                @click="createPostDirectly(item)"
+                                class="text-sm text-green-400 hover:text-green-300 flex items-center mr-3"
+                                title="Create post from AI version directly"
+                            >
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                                </svg>
+                                Create Post
                             </button>
                             <button
                                 @click="openPreview(item)"
@@ -859,37 +879,45 @@
                 </div>
 
                 <div class="mb-4">
-                    <div class="flex justify-between items-center mb-3">
-                        <h4 class="text-md font-medium text-white">Select Items to Reprocess</h4>
-                        <div class="flex items-center">
-                            <input type="checkbox" id="selectAllItemsForReprocess" v-model="selectAllForReprocess" @change="toggleSelectAllForReprocess" class="mr-2 h-4 w-4 rounded text-blue-600 focus:ring-blue-500 border-neutral-600 bg-neutral-700">
-                            <label for="selectAllItemsForReprocess" class="text-sm text-neutral-300">Select All Visible</label>
-                        </div>
-                    </div>
-                    <div v-if="loading" class="py-4 flex justify-center">
-                        <div class="animate-spin rounded-full h-6 w-6 border-t-2 border-b-2 border-blue-500"></div>
-                    </div>
-                    <div v-else-if="feedItems.length === 0" class="py-4 text-center text-neutral-400">
-                        No feed items to reprocess.
-                    </div>
-                    <div v-else class="max-h-80 overflow-y-auto border border-neutral-700 rounded-md">
-                        <div class="divide-y divide-neutral-700">
-                            <div v-for="item in feedItems" :key="item.id" class="flex items-center p-3 hover:bg-neutral-750">
-                                <input
-                                    type="checkbox"
-                                    :id="'reprocess-item-' + item.id"
-                                    v-model="selectedItemsForReprocess"
-                                    :value="item.id"
-                                    class="mr-3 h-4 w-4 rounded text-blue-600 focus:ring-blue-500 border-neutral-600 bg-neutral-700"
-                                >
-                                <label :for="'reprocess-item-' + item.id" class="text-sm text-white cursor-pointer flex-1 truncate mr-3">
-                                    {{ item.title }}
-                                </label>
-                                <span class="text-xs text-neutral-400">{{ getChannelName(item.channel) }}</span>
+                    <!-- Only show selection list if no items were pre-selected -->
+                    <template v-if="selectedItems.length === 0">
+                        <div class="flex justify-between items-center mb-3">
+                            <h4 class="text-md font-medium text-white">Select Items to Reprocess</h4>
+                            <div class="flex items-center">
+                                <input type="checkbox" id="selectAllItemsForReprocess" v-model="selectAllForReprocess" @change="toggleSelectAllForReprocess" class="mr-2 h-4 w-4 rounded text-blue-600 focus:ring-blue-500 border-neutral-600 bg-neutral-700">
+                                <label for="selectAllItemsForReprocess" class="text-sm text-neutral-300">Select All Visible</label>
                             </div>
                         </div>
+                        <div v-if="loading" class="py-4 flex justify-center">
+                            <div class="animate-spin rounded-full h-6 w-6 border-t-2 border-b-2 border-blue-500"></div>
+                        </div>
+                        <div v-else-if="feedItems.length === 0" class="py-4 text-center text-neutral-400">
+                            No feed items to reprocess.
+                        </div>
+                        <div v-else class="max-h-80 overflow-y-auto border border-neutral-700 rounded-md">
+                            <div class="divide-y divide-neutral-700">
+                                <div v-for="item in feedItems" :key="item.id" class="flex items-center p-3 hover:bg-neutral-750">
+                                    <input
+                                        type="checkbox"
+                                        :id="'reprocess-item-' + item.id"
+                                        v-model="selectedItemsForReprocess"
+                                        :value="item.id"
+                                        class="mr-3 h-4 w-4 rounded text-blue-600 focus:ring-blue-500 border-neutral-600 bg-neutral-700"
+                                    >
+                                    <label :for="'reprocess-item-' + item.id" class="text-sm text-white cursor-pointer flex-1 truncate mr-3">
+                                        {{ item.title }}
+                                    </label>
+                                    <span class="text-xs text-neutral-400">{{ getChannelName(item.channel) }}</span>
+                                </div>
+                            </div>
+                        </div>
+                        <p class="text-xs text-neutral-500 mt-2">Only items currently visible in the main list are shown here. Use the main page filters to refine the selection if needed.</p>
+                    </template>
+                    <div v-else class="bg-neutral-900/50 p-4 rounded-md border border-neutral-700 mb-2">
+                        <p class="text-neutral-300 text-center">
+                            Are you sure you want to reprocess <strong>{{ selectedItemsForReprocess.length }}</strong> selected items?
+                        </p>
                     </div>
-                     <p class="text-xs text-neutral-500 mt-2">Only items currently visible in the main list are shown here. Use the main page filters to refine the selection if needed.</p>
                 </div>
 
                 <div class="flex justify-end space-x-3 mt-6 pt-4 border-t border-neutral-700">
@@ -1073,37 +1101,42 @@
                 </div>
 
                 <div class="mb-4">
-                    <div class="flex justify-between items-center mb-3">
-                        <h4 class="text-md font-medium text-white">Select items to delete</h4>
-                        <div class="flex items-center">
-                            <input type="checkbox" id="selectAllItemsForDelete" v-model="selectAllForDelete" @change="toggleSelectAllForDelete" class="mr-2 h-4 w-4 rounded text-blue-600 focus:ring-blue-500 border-neutral-600 bg-neutral-700">
-                            <label for="selectAllItemsForDelete" class="text-sm text-neutral-300">Selecionar Todos Visíveis</label>
-                        </div>
-                    </div>
-                    <div v-if="loading" class="py-4 flex justify-center">
-                        <div class="animate-spin rounded-full h-6 w-6 border-t-2 border-b-2 border-blue-500"></div>
-                    </div>
-                    <div v-else-if="feedItems.length === 0" class="py-4 text-center text-neutral-400">
-                        No items to delete.
-                    </div>
-                    <div v-else class="max-h-80 overflow-y-auto border border-neutral-700 rounded-md">
-                        <div class="divide-y divide-neutral-700">
-                            <div v-for="item in feedItems" :key="item.id" class="flex items-center p-3 hover:bg-neutral-750">
-                                <input
-                                    type="checkbox"
-                                    :id="'delete-item-' + item.id"
-                                    v-model="selectedItemsForDelete"
-                                    :value="item.id"
-                                    class="mr-3 h-4 w-4 rounded text-blue-600 focus:ring-blue-500 border-neutral-600 bg-neutral-700"
-                                >
-                                <label :for="'delete-item-' + item.id" class="text-sm text-white cursor-pointer flex-1 truncate mr-3">
-                                    {{ item.title }}
-                                </label>
-                                <span class="text-xs text-neutral-400">{{ getChannelName(item.channel) }}</span>
+                    <template v-if="selectedItems.length === 0">
+                        <div class="flex justify-between items-center mb-3">
+                            <h4 class="text-md font-medium text-white">Select items to delete</h4>
+                            <div class="flex items-center">
+                                <input type="checkbox" id="selectAllItemsForDelete" v-model="selectAllForDelete" @change="toggleSelectAllForDelete" class="mr-2 h-4 w-4 rounded text-blue-600 focus:ring-blue-500 border-neutral-600 bg-neutral-700">
+                                <label for="selectAllItemsForDelete" class="text-sm text-neutral-300">Selecionar Todos Visíveis</label>
                             </div>
                         </div>
+                        <div v-if="loading" class="py-4 flex justify-center">
+                            <div class="animate-spin rounded-full h-6 w-6 border-t-2 border-b-2 border-blue-500"></div>
+                        </div>
+                        <div v-else-if="feedItems.length === 0" class="py-4 text-center text-neutral-400">
+                            No items to delete.
+                        </div>
+                        <div v-else class="max-h-80 overflow-y-auto border border-neutral-700 rounded-md">
+                            <div class="divide-y divide-neutral-700">
+                                <div v-for="item in feedItems" :key="item.id" class="flex items-center p-3 hover:bg-neutral-750">
+                                    <input
+                                        type="checkbox"
+                                        :id="'delete-item-' + item.id"
+                                        v-model="selectedItemsForDelete"
+                                        :value="item.id"
+                                        class="mr-3 h-4 w-4 rounded text-blue-600 focus:ring-blue-500 border-neutral-600 bg-neutral-700"
+                                    >
+                                    <label :for="'delete-item-' + item.id" class="text-sm text-white cursor-pointer flex-1 truncate mr-3">
+                                        {{ item.title }}
+                                    </label>
+                                    <span class="text-xs text-neutral-400">{{ getChannelName(item.channel) }}</span>
+                                </div>
+                            </div>
+                        </div>
+                        <p class="text-xs text-neutral-500 mt-2">Only items currently visible in the main list are shown here. Use the filters on the main page to refine the selection if needed.</p>
+                    </template>
+                    <div v-else class="bg-neutral-900/50 p-4 rounded-md border border-neutral-700 mb-2 text-center text-red-400">
+                         Wait! This will delete <strong>{{ selectedItemsForDelete.length }}</strong> selected items. This action cannot be undone.
                     </div>
-                    <p class="text-xs text-neutral-500 mt-2">Only items currently visible in the main list are shown here. Use the filters on the main page to refine the selection if needed.</p>
                 </div>
 
                 <div class="flex justify-end space-x-3 mt-6 pt-4 border-t border-neutral-700">
@@ -1323,6 +1356,36 @@
                 </div>
             </div>
         </div>
+
+        <!-- Batch Create Post Progress Overlay -->
+        <div v-if="batchCreatePostLoading" class="fixed inset-0 bg-black/80 flex items-center justify-center z-[60] p-4" style="backdrop-filter: blur(4px);">
+            <div class="bg-neutral-800 rounded-lg shadow-xl max-w-md w-full p-6">
+                <div class="text-center mb-4">
+                    <div class="inline-block animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-green-500 mb-3"></div>
+                    <h3 class="text-lg font-medium text-white">Creating Posts</h3>
+                    <p class="text-neutral-400 mt-1">Processing batch post creation...</p>
+                </div>
+
+                <div class="w-full bg-neutral-700 rounded-full h-4 mb-3">
+                    <div
+                        class="bg-green-600 h-4 rounded-full transition-all duration-300 ease-out"
+                        :style="{ width: `${(batchCreatePostProgress.completed / batchCreatePostProgress.total) * 100}%` }"
+                    ></div>
+                </div>
+
+                <div class="text-center text-sm text-neutral-300 mb-4">
+                    <span>{{ batchCreatePostProgress.completed }} of {{ batchCreatePostProgress.total }} items processed</span>
+                </div>
+
+                <div class="max-h-40 overflow-y-auto space-y-2 text-xs">
+                    <div v-for="(result, index) in batchCreatePostProgress.processedItems" :key="index" class="flex items-center justify-between p-2 bg-neutral-700/50 rounded">
+                        <span class="text-neutral-300 truncate mr-2">{{ result.title }}</span>
+                        <span v-if="result.success" class="text-green-400">Success</span>
+                        <span v-else class="text-red-400">Error</span>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 </template>
 
@@ -1441,10 +1504,76 @@ const batchAIProgress = ref<any>({
     processedItems: []
 });
 
+const hasReadyAISelection = computed(() => {
+    return selectedItems.value.some(id => {
+        const item = feedItems.value.find(i => i.id === id);
+        return item && item.aiStatus === 'completed' && !item.postRef;
+    });
+});
+
+const batchCreatePostLoading = ref<boolean>(false);
+const batchCreatePostProgress = ref<any>({
+    completed: 0,
+    total: 0,
+    currentItem: '',
+    processedItems: []
+});
+
 // Helper function to remove accents
 const removeAccents = (str: string): string => {
     if (!str) return '';
     return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+};
+
+const matchSuggestedCategories = (suggestedCategories: string[]): string[] => {
+    if (!suggestedCategories || suggestedCategories.length === 0 || categories.value.length === 0) 
+        return [];
+
+    const suggestedCategoryNames = suggestedCategories.map((cat: string) => cat.toLowerCase());
+    
+    return categories.value
+        .filter(category => {
+            const systemCategoryNameLower = removeAccents(category.name.toLowerCase());
+            const normalizedSuggestedCategories = suggestedCategoryNames.map((sc: string) => removeAccents(sc));
+
+            let isMatch = normalizedSuggestedCategories.some((aiSuggest: string) => aiSuggest.includes(systemCategoryNameLower));
+
+            if (!isMatch) {
+                const systemWords = systemCategoryNameLower.split(/\s+/);
+                isMatch = normalizedSuggestedCategories.some((aiSuggest: string) => {
+                    const aiWords = aiSuggest.split(/\s+/);
+                    return systemWords.some(sysWord => 
+                        aiWords.some(aiWord => {
+                            let partMatch = false;
+                            if (sysWord.length < 3 || aiWord.length < 3) {
+                                partMatch = sysWord === aiWord;
+                            } else {
+                                partMatch = sysWord.includes(aiWord) || aiWord.includes(sysWord);
+                            }
+                            
+                            return partMatch;
+                        })
+                    );
+                });
+            }
+            
+            if (!isMatch) {
+                isMatch = normalizedSuggestedCategories.some((aiSuggest: string) => systemCategoryNameLower.includes(aiSuggest));
+            }
+
+            return isMatch;
+        })
+        .map(category => category.id);
+};
+
+const parseAICategories = (item: FeedItem): string[] => {
+    if (!item.aiCategories) return [];
+    try {
+        return JSON.parse(item.aiCategories);
+    } catch (e) {
+        console.error('Failed to parse aiCategories:', e);
+        return [];
+    }
 };
 
 const notification = ref<NotificationData>({
@@ -1619,7 +1748,8 @@ const openPreview = (item: FeedItem): void => {
         }
 
         if (aiContent.value.suggestedCategories && aiContent.value.suggestedCategories.length > 0) {
-           // Logic to match categories (already in generateAIContent, maybe refactor later)
+            const matchedIds = matchSuggestedCategories(aiContent.value.suggestedCategories);
+            selectedCategories.value = [...new Set([...selectedCategories.value, ...matchedIds])];
         }
         
         if (item.aiModel) {
@@ -1737,43 +1867,9 @@ const generateAIContent = async (): Promise<void> => {
                             }
                         }
 
-                        if (response.suggestedCategories && response.suggestedCategories.length > 0 && categories.value.length > 0) {
-                            const suggestedCategoryNames = response.suggestedCategories.map((cat: string) => cat.toLowerCase());
-                            const matchingCategoryIds = categories.value
-                                .filter(category => {
-                                    const systemCategoryNameLower = removeAccents(category.name.toLowerCase());
-                                    const normalizedSuggestedCategories = suggestedCategoryNames.map((sc: string) => removeAccents(sc));
-
-                                    let isMatch = normalizedSuggestedCategories.some((aiSuggest: string) => aiSuggest.includes(systemCategoryNameLower));
-
-                                    if (!isMatch) {
-                                        const systemWords = systemCategoryNameLower.split(/\s+/);
-                                        isMatch = normalizedSuggestedCategories.some((aiSuggest: string) => {
-                                            const aiWords = aiSuggest.split(/\s+/);
-                                            return systemWords.some(sysWord => 
-                                                aiWords.some(aiWord => {
-                                                    let partMatch = false;
-                                                    if (sysWord.length < 3 || aiWord.length < 3) {
-                                                        partMatch = sysWord === aiWord;
-                                                    } else {
-                                                        partMatch = sysWord.includes(aiWord) || aiWord.includes(sysWord);
-                                                    }
-                                                    
-                                                    return partMatch;
-                                                })
-                                            );
-                                        });
-                                    }
-                                    
-                                    if (!isMatch) {
-                                        isMatch = normalizedSuggestedCategories.some((aiSuggest: string) => systemCategoryNameLower.includes(aiSuggest));
-                                    }
-
-                                    return isMatch;
-                                })
-                                .map(category => category.id);
-
-                            selectedCategories.value = [...new Set([...selectedCategories.value, ...matchingCategoryIds])];
+                        if (response.suggestedCategories && response.suggestedCategories.length > 0) {
+                            const matchedIds = matchSuggestedCategories(response.suggestedCategories);
+                            selectedCategories.value = [...new Set([...selectedCategories.value, ...matchedIds])];
                         }
 
                         aiLoading.value = false;
@@ -1800,6 +1896,132 @@ const generateAIContent = async (): Promise<void> => {
         aiError.value = err instanceof Error ? err.message : 'Failed to generate AI content';
         showNotification('error', 'Failed to generate AI content');
     }
+};
+
+const processPostCreation = async (item: FeedItem): Promise<boolean> => {
+    if (!item.aiTitle || !item.aiContent || item.aiStatus !== 'completed') {
+        return false;
+    }
+
+    try {
+        const aiTags = item.aiTags ? JSON.parse(item.aiTags) : [];
+        const aiCategoriesMatched = item.aiCategories ? JSON.parse(item.aiCategories) : [];
+        
+        const categoryIds = matchSuggestedCategories(aiCategoriesMatched);
+        
+        const slug = item.aiTitle
+            .toLowerCase()
+            .normalize('NFD')
+            .replace(/[\u0300-\u036f]/g, '')
+            .replace(/[^\w\s-]/g, '')
+            .replace(/[\s_-]+/g, '-')
+            .replace(/^-+|-+$/g, '');
+
+        const sourceAttribution = `
+            <p class="source-attribution">
+                <strong>Com informações do:</strong> <a href="${item.link}" target="_blank" rel="noopener noreferrer">${getChannelName(item.channel)}</a>
+            </p>
+        `;
+
+        const content = item.aiContent + sourceAttribution;
+
+        const tags = aiTags.length > 0
+            ? aiTags
+            : [getChannelName(item.channel), 'AI Generated'];
+
+        const postData = {
+            post: {
+                title: item.aiTitle,
+                slug: slug,
+                content: content,
+                status: 'draft',
+                excerpt: item.aiContent.substring(0, 200).replace(/<\/?[^>]+(>|$)/g, "") + '...',
+                featureImage: item.aiFeatureImage || item.featureImage || null,
+                tags: tags,
+                categories: categoryIds
+            },
+            meta: {
+                metaTitle: item.aiTitle,
+                metacontent: item.aiContent.substring(0, 155).replace(/<\/?[^>]+(>|$)/g, "") + '...',
+                ogTitle: item.aiTitle,
+                ogcontent: item.aiContent.substring(0, 155).replace(/<\/?[^>]+(>|$)/g, "") + '...',
+                ogImage: item.aiFeatureImage || item.featureImage || null,
+                twitterTitle: item.aiTitle,
+                twittercontent: item.aiContent.substring(0, 155).replace(/<\/?[^>]+(>|$)/g, "") + '...',
+                twitterImage: item.aiFeatureImage || item.featureImage || null
+            }
+        };
+
+        const saveResponse = await adminClient.posts.save(postData);
+
+        if (!saveResponse || !saveResponse.id)
+            throw new Error("Failed to create post");
+
+        await feedClient.raw.updateRaw(item.id, {
+            postRef: saveResponse.id
+        });
+
+        return true;
+    } catch (err) {
+        console.error(`Failed to create post for item ${item.id}:`, err);
+        return false;
+    }
+};
+
+const createPostDirectly = async (item: FeedItem): Promise<void> => {
+    showNotification('info', `Creating post for "${item.title}"...`);
+    const success = await processPostCreation(item);
+    if (success) {
+        showNotification('success', 'Post created successfully!');
+        await loadFeedItems();
+    } else {
+        showNotification('error', 'Failed to create post. Check console for details.');
+    }
+};
+
+const startBatchCreatePosts = async (): Promise<void> => {
+    if (selectedItems.value.length === 0) return;
+
+    const itemsToProcess = feedItems.value.filter(item => 
+        selectedItems.value.includes(item.id) && 
+        item.aiStatus === 'completed' && 
+        !item.postRef
+    );
+
+    if (itemsToProcess.length === 0) {
+        showNotification('warning', 'No items with ready AI versions were found in selection.');
+        return;
+    }
+
+    batchCreatePostLoading.value = true;
+    batchCreatePostProgress.value = {
+        completed: 0,
+        total: itemsToProcess.length,
+        currentItem: '',
+        processedItems: []
+    };
+
+    for (const item of itemsToProcess) {
+        batchCreatePostProgress.value.currentItem = item.title;
+        const success = await processPostCreation(item);
+        
+        batchCreatePostProgress.value.completed++;
+        batchCreatePostProgress.value.processedItems.push({
+            title: item.title,
+            success: success
+        });
+    }
+
+    showNotification('success', `Batch processing complete: ${batchCreatePostProgress.value.completed} posts created.`);
+    
+    // Auto-close progress after 3 seconds if all successful
+    setTimeout(() => {
+        batchCreatePostLoading.value = false;
+        selectedItems.value = [];
+        selectAll.value = false;
+    }, 3000);
+
+    await loadFeedItems();
 };
 
 const regenerateAIContent = (): void => {
@@ -2416,9 +2638,13 @@ const newCategoryForm = ref({
 const categoryFormErrors = ref<Record<string, string>>({});
 
 const openBulkReprocessDialog = (): void => {
-    selectedItemsForReprocess.value = [];
+    if (selectedItems.value.length > 0) {
+        selectedItemsForReprocess.value = [...selectedItems.value];
+    } else {
+        selectedItemsForReprocess.value = [];
+    }
+    
     selectAllForReprocess.value = false;
-    // Items for the dialog will be the current `feedItems`, already filtered by the main view
     showBulkReprocessDialog.value = true;
 };
 
@@ -2495,6 +2721,8 @@ const startBulkReprocess = async (): Promise<void> => {
 
     bulkReprocessLoading.value = false;
     closeBulkReprocessDialog();
+    selectedItems.value = []; // Clear main selection after bulk action
+    selectAll.value = false;
     await refreshData(); // Atualizar a lista principal
 };
 
@@ -2623,7 +2851,13 @@ const bulkDeleteProgress = ref({
 const showBulkDeleteConfirmation = ref<boolean>(false);
 
 const openBulkDeleteDialog = (): void => {
-    showBulkDeleteDialog.value = true;
+    if (selectedItems.value.length > 0) {
+        selectedItemsForDelete.value = [...selectedItems.value];
+        showBulkDeleteConfirmation.value = true;
+    } else {
+        selectedItemsForDelete.value = [];
+        showBulkDeleteDialog.value = true;
+    }
 };
 
 const closeBulkDeleteDialog = (): void => {
@@ -2707,6 +2941,8 @@ const startBulkDelete = async (): Promise<void> => {
     } finally {
         bulkDeleteLoading.value = false;
         showBulkDeleteConfirmation.value = false;
+        selectedItems.value = []; // Clear main selection after bulk action
+        selectAll.value = false;
         closeBulkDeleteDialog();
     }
 };
@@ -2789,6 +3025,8 @@ const startBatchAI = async (): Promise<void> => {
              } else {
                  batchAILoading.value = false;
                  showNotification('success', 'Batch AI processing completed.');
+                 selectedItems.value = []; // Clear main selection
+                 selectAll.value = false;
                  refreshData();
              }
         };
