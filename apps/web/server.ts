@@ -260,6 +260,34 @@ async function bootstrap() {
             return;
         }
 
+        if (url === '/robots.txt') {
+            try {
+                const response = await fetch(`${env.VITE_API_URL}/robots.txt`);
+                const data = await response.text();
+                res.setHeader('Content-Type', 'text/plain');
+                res.end(data);
+                return;
+            } catch (error) {
+                res.statusCode = 500;
+                res.end('Error fetching robots.txt');
+                return;
+            }
+        }
+
+        if (url.includes('sitemap') && url.endsWith('.xml')) {
+            try {
+                const response = await fetch(`${env.VITE_API_URL}${url}`);
+                const data = await response.text();
+                res.setHeader('Content-Type', 'text/xml');
+                res.end(data);
+                return;
+            } catch (error) {
+                res.statusCode = 500;
+                res.end('Error fetching sitemap');
+                return;
+            }
+        }
+
         if (url.startsWith('/assets/')) {
             const assetPath = path.resolve('dist', '.' + url);
             const served = await serveStaticFile(req, res, assetPath);

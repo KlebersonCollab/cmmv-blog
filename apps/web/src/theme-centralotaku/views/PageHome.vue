@@ -442,6 +442,22 @@ const headData = computed(() => {
             {
                 type: 'application/ld+json',
                 innerHTML: JSON.stringify(vue3.createLdJSON('website', {}, rawSettings.value))
+            },
+            {
+                type: 'application/ld+json',
+                innerHTML: JSON.stringify({
+                    "@context": "https://schema.org",
+                    "@type": "Organization",
+                    "name": settings.value.title,
+                    "url": settings.value.url,
+                    "logo": settings.value.logo,
+                    "sameAs": [
+                        settings.value.facebook ? `https://facebook.com/${settings.value.facebook}` : null,
+                        settings.value.twitter ? `https://twitter.com/${settings.value.twitter}` : null,
+                        settings.value.instagram ? `https://instagram.com/${settings.value.instagram}` : null,
+                        settings.value.linkedin ? `https://linkedin.com/${settings.value.linkedin}` : null
+                    ].filter(Boolean)
+                })
             }
         ] : []
     };
