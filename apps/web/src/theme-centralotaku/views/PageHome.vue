@@ -68,7 +68,7 @@
                             </div>
                             <div v-else>
                                 <CategorySection v-if="reviewPosts.length > 0" title="Análises em Destaque" :posts="reviewPosts" />
-                                <template v-for="category in mainNavRootCategories" :key="category.id">
+                                <template v-for="category in allRootCategoriesWithPosts" :key="category.id">
                                     <CategorySection
                                         v-if="postsByMainCategory[category.id] && postsByMainCategory[category.id].length > 0"
                                         :title="category.name"
@@ -479,10 +479,10 @@ const featuredPost = computed(() => {
 });
 
 const loadPostsForMainCategories = async () => {
-    if (mainNavRootCategories.value.length === 0) return;
+    if (allRootCategoriesWithPosts.value.length === 0) return;
 
     try {
-        const categoryPromises = mainNavRootCategories.value.map(category => {
+        const categoryPromises = allRootCategoriesWithPosts.value.map(category => {
             const filters: any = { category: category.id, limit: 4 };
             return blogAPI.posts.getAll(filters)
                 .then(response => ({
