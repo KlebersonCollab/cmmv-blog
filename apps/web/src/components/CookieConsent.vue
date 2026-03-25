@@ -1,11 +1,11 @@
 <template>
     <ClientOnly>
-        <div v-if="!cookiesAccepted" class="border-t border-neutral-100 dark:border-neutral-800 fixed bottom-0 inset-x-0 z-50 bg-neutral-800 dark:bg-neutral-900 text-white p-4 shadow-lg transform transition-transform duration-300" :class="{ 'translate-y-full': isHidden }">
+        <div v-if="!cookiesAccepted" class="border-t border-neutral-100 fixed bottom-0 inset-x-0 z-50 bg-neutral-800 text-white p-4 shadow-lg transform transition-transform duration-300" :class="{ 'translate-y-full': isHidden }">
             <div class="container mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
                 <div class="flex-1">
                     <p class="text-sm md:text-base text-neutral-200">
                         Este site utiliza cookies para melhorar sua experiência de navegação. Ao continuar usando este site, você concorda com o uso de cookies conforme nossa
-                        <a href="/termos-de-privacidade" class="text-blue-400 hover:text-blue-300 underline">Política de Privacidade</a>.
+                        <a href="/termos-de-privacidade" class="text-[#ed1c24] hover:text-[#c5131a] underline">Política de Privacidade</a>.
                     </p>
                 </div>
                 <div class="flex flex-shrink-0 gap-3">
@@ -17,7 +17,7 @@
                     </button>
                     <button
                         @click="acceptCookies"
-                        class="px-4 py-2 text-sm bg-blue-600 hover:bg-blue-700 rounded-md text-white font-medium transition-colors cursor-pointer"
+                        class="px-4 py-2 text-sm bg-[#ed1c24] hover:bg-[#c5131a] rounded-md text-white font-medium transition-colors cursor-pointer"
                     >
                         Aceitar
                     </button>

@@ -1,10 +1,10 @@
 <template>
-    <div class="w-full relative bg-neutral-100">
-        <div class="w-full max-w-[1200px] mx-auto px-4">
-            <div v-if="!post" class="bg-white rounded-lg p-6">
+    <div class="w-full relative min-h-screen pb-12">
+        <div class="w-full max-w-[1200px] mx-auto px-4 pt-8">
+            <div v-if="!post" class="bg-white rounded-xl p-12 shadow-sm">
                 <div class="text-center">
-                    <h1 class="text-2xl font-bold text-neutral-800 mb-4">Post não encontrado</h1>
-                    <p class="text-neutral-600">O post que você está procurando não existe ou está indisponível.</p>
+                    <h1 class="text-2xl font-bold text-slate-800 mb-4">Post não encontrado</h1>
+                    <p class="text-slate-600">O post que você está procurando não existe ou está indisponível.</p>
                 </div>
             </div>
 
@@ -27,17 +27,18 @@
                     <div class="flex-grow">
                         <div class="grid grid-cols-1 lg:grid-cols-4 gap-4">
                             <!-- Main Post Content (2 columns width) -->
-                            <div class="lg:col-span-3 bg-white rounded-lg p-4 relative">
+                            <div class="lg:col-span-3 bg-white rounded-xl p-6 md:p-10 shadow-sm relative border border-slate-100">
                                 <div class="w-full mx-auto overflow-hidden">
-                                    <h1 class="post-title text-neutral-900 text-3xl md:text-4xl font-bold break-words mb-4">{{ post.title }}</h1>
+                                    <div class="flex flex-wrap gap-2 mb-6">
+                                        <a v-for="category in post.categories" :key="category.id" :href="`/category/${category.slug}`"
+                                            class="px-2 py-0.5 bg-red-50 text-[#ed1c24] text-[10px] font-bold uppercase tracking-wider rounded-md hover:bg-red-100 transition-all border border-red-100">
+                                            {{ category.name }}
+                                        </a>
+                                    </div>
 
-                                    <div v-if="post.featureImage" class="post-featured-image relative overflow-hidden rounded-lg max-h-[400px]">
-                                        <div class="absolute top-4 left-4 z-10 flex flex-wrap gap-2">
-                                            <a v-for="category in post.categories" :key="category.id" :href="`/category/${category.slug}`"
-                                                class="px-3 py-1 bg-[#ed1c24] text-white text-sm font-medium rounded-full shadow-sm hover:bg-[#c5131a] transition-all">
-                                                {{ category.name }}
-                                            </a>
-                                        </div>
+                                    <h1 class="post-title text-slate-900 text-3xl md:text-5xl font-bold break-words mb-8 leading-tight">{{ post.title }}</h1>
+
+                                    <div v-if="post.featureImage" class="post-featured-image relative overflow-hidden rounded-xl shadow-lg mb-10">
 
                                                                 <OptimizedImage
                             :src="post.featureImage"
@@ -85,8 +86,7 @@
                                         </div>
                                     </header>
 
-                                    <!-- Post Content -->
-                                    <div class="post-content text-neutral-800 prose prose-sm sm:prose prose-neutral max-w-none overflow-hidden">
+                                    <div class="post-content text-[#1e293b] prose prose-lg prose-slate max-w-none overflow-hidden leading-relaxed">
                                         <div v-html="processPostContent(post.content)"></div>
                                     </div>
 

@@ -1,13 +1,13 @@
 <template>
     <div class="w-full max-w-[1200px] mx-auto px-4">
         <h1 class="sr-only" v-if="settings">{{ settings.title }} - {{ settings.description }}</h1>
-        <div v-if="error" class="text-center py-16 bg-white rounded-lg shadow-md">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 mx-auto text-red-500 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <div v-if="error" class="text-center py-20 bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 mx-auto text-red-500 mb-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
-            <h2 class="text-2xl font-bold mb-2 text-gray-800">Erro ao carregar posts</h2>
-            <p class="text-gray-600 mb-4">Não foi possível carregar os posts. Por favor, tente novamente.</p>
-            <button @click="loadPosts" class="px-4 py-2 bg-[#ed1c24] text-white rounded-md hover:bg-[#c5131a] transition-colors">
+            <h2 class="text-2xl font-bold mb-3 text-slate-800 dark:text-slate-100">Erro ao carregar posts</h2>
+            <p class="text-slate-600 dark:text-slate-400 mb-8">Não foi possível carregar os posts. Por favor, tente novamente.</p>
+            <button @click="loadPosts" class="px-6 py-2.5 bg-[#ed1c24] text-white rounded-lg hover:bg-[#c5131a] transition-all shadow-md hover:shadow-lg active:scale-95 font-semibold">
                 Tentar novamente
             </button>
         </div>
@@ -43,10 +43,13 @@
                     <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
                         <div class="lg:col-span-2">
                             <!-- Seção Estática de Últimas Notícias -->
-                            <div class="flex flex-wrap items-center justify-between mb-6 border-b-2 border-gray-200 pb-2">
-                                <h2 class="text-xl font-bold text-[#ed1c24]">
-                                    Últimas Notícias
+                            <div class="flex flex-col mb-8 relative">
+                                <h2 class="text-3xl md:text-4xl font-black text-slate-900 dark:text-white tracking-tighter uppercase italic">
+                                    Últimas <span class="text-[#ed1c24]">Notícias</span>
                                 </h2>
+                                <div class="mt-2 w-full h-1 bg-[#ed1c24] rounded-full opacity-20 relative">
+                                    <div class="absolute inset-0 w-32 h-full bg-[#ed1c24] rounded-full shadow-[0_0_10px_rgba(237,28,36,0.5)]"></div>
+                                </div>
                             </div>
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-8 mb-8">
                                 <PostCard v-for="post in latestPostsToDisplay" :key="post.id" :post="post" />
@@ -87,9 +90,9 @@
                                 </div>
                             </div>
 
-                            <div v-if="loadingMore" class="mt-8 flex justify-center items-center py-6">
-                                <div class="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-[#ed1c24]"></div>
-                                <span class="ml-3 text-gray-600">Carregando mais posts...</span>
+                            <div v-if="loadingMore" class="mt-12 flex justify-center items-center py-10 bg-white/50 dark:bg-slate-900/50 rounded-xl backdrop-blur-sm border border-slate-100 dark:border-slate-800">
+                                <div class="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-[#ed1c24]"></div>
+                                <span class="ml-4 text-slate-600 dark:text-slate-400 font-medium">Carregando mais posts...</span>
                             </div>
 
                             <div ref="observerTarget" class="h-4 w-full"></div>

@@ -1,15 +1,29 @@
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&display=swap');
+
 :root {
     --bg-color: #ffffff;
-    --text-color: #333333;
-    --border-color: #e5e7eb;
-    --muted-color: #6b7280;
+    --text-color: #0f172a;
+    --border-color: #e2e8f0;
+    --muted-color: #64748b;
+    --primary-color: #ed1c24;
+    --accent-color: #ed1c24;
+    --glass-bg: rgba(255, 255, 255, 0.8);
+    --glass-border: rgba(0, 0, 0, 0.1);
+    --font-main: 'DM Sans', sans-serif;
+    
+    /* Shadows */
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+    --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
 }
 
-.dark {
-    --bg-color: #171717;
-    --text-color: #e5e7eb;
-    --border-color: #374151;
-    --muted-color: #9ca3af;
+
+body {
+    font-family: var(--font-main);
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    transition: background-color 0.3s ease, color 0.3s ease;
 }
 
 .article-container {
@@ -21,18 +35,20 @@
 }
 
 .post-title {
-    font-size: 2.5rem;
-    font-weight: 700;
-    line-height: 1.2;
-    margin-bottom: 16px;
+    font-size: 3rem;
+    font-weight: 800;
+    line-height: 1.1;
+    margin-bottom: 24px;
+    letter-spacing: -0.02em;
 }
 
 .post-meta {
     display: flex;
     align-items: center;
     gap: 16px;
-    font-size: 0.95rem;
-    color: #666;
+    font-size: 0.875rem;
+    color: var(--muted-color);
+    font-weight: 500;
 }
 
 .status-badge {
@@ -89,20 +105,28 @@
 }
 
 .post-content a {
-    color: #0066cc;
+    color: var(--primary-color);
     text-decoration: none;
+    font-weight: 500;
+    border-bottom: 1px solid transparent;
+    transition: all 0.2s ease;
 }
 
 .post-content a:hover {
-    text-decoration: underline;
+    border-bottom-color: var(--primary-color);
+    opacity: 0.8;
 }
 
 .post-content blockquote {
-    border-left: 4px solid #ddd;
-    padding-left: 16px;
-    margin-left: 0;
-    color: #666;
+    border-left: 4px solid var(--primary-color);
+    padding: 24px;
+    margin: 32px 0;
+    background: rgba(237, 28, 36, 0.05);
+    border-radius: 8px;
+    color: var(--text-color);
     font-style: italic;
+    font-size: 1.15rem;
+    line-height: 1.7;
 }
 
 .post-content pre {
@@ -169,10 +193,11 @@
 .category {
     display: inline-block;
     padding: 4px 12px;
-    background: #e6f3ff;
+    background: rgba(237, 28, 36, 0.1);
     border-radius: 999px;
     font-size: 0.85rem;
-    color: #0066cc;
+    color: var(--primary-color);
+    font-weight: 600;
 }
 
 .author-box {
@@ -213,7 +238,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    background-color: #0066cc;
+    background-color: #ed1c24;
     color: white;
     font-weight: bold;
     font-size: 18px;

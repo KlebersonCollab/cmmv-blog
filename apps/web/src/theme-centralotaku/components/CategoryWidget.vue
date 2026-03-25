@@ -1,17 +1,20 @@
 <template>
-  <div class="bg-white rounded-lg shadow-md p-5 mb-6">
-    <h2 class="text-xl font-bold mb-4 pb-2 text-[#ed1c24] border-b-2 border-gray-200">
-      Categorias
-    </h2>
-    <div class="max-h-[400px] overflow-y-auto pr-2">
+  <div class="bg-white dark:bg-slate-900 rounded-xl shadow-sm p-6 mb-8 border border-slate-100 dark:border-slate-800">
+    <div class="flex items-center justify-between mb-6 pb-2 relative">
+        <h2 class="text-lg font-extrabold text-slate-900 dark:text-white tracking-tight uppercase">
+            Categorias
+        </h2>
+        <div class="absolute bottom-0 left-0 w-12 h-1 bg-[#ed1c24] rounded-full"></div>
+    </div>
+    <div class="max-h-[450px] overflow-y-auto pr-2 custom-scrollbar">
         <ul class="space-y-2">
             <li v-for="category in categories" :key="category.id">
                 <a :href="`/category/${category.slug}`"
-                   class="group flex justify-between items-center p-3 bg-gray-100 rounded-lg hover:bg-[#ed1c24] hover:text-white transition-colors duration-200 ease-in-out">
-                    <span class="font-medium text-gray-800 group-hover:text-white">
+                   class="group flex justify-between items-center p-3 bg-slate-50 dark:bg-slate-800/50 rounded-lg hover:bg-[#ed1c24] transition-all duration-300 border border-transparent hover:border-red-400/30 shadow-sm hover:shadow-md hover:-translate-x-1">
+                    <span class="text-sm font-bold text-slate-700 dark:text-slate-300 group-hover:text-white transition-colors">
                         {{ category.name }}
                     </span>
-                    <span class="bg-gray-200 text-gray-600 group-hover:bg-white/20 group-hover:text-white text-xs font-semibold px-2.5 py-1 rounded-full">
+                    <span class="bg-white dark:bg-slate-700 text-slate-500 dark:text-slate-400 group-hover:bg-white/20 group-hover:text-white text-[10px] font-black px-2 py-0.5 rounded-md shadow-inner transition-all">
                         {{ category.postCount }}
                     </span>
                 </a>
@@ -22,7 +25,6 @@
 </template>
 
 <script setup lang="ts">
-import { defineProps } from 'vue';
 
 defineProps({
   categories: {
