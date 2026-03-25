@@ -48,7 +48,7 @@
                                     Últimas <span class="text-[#ed1c24]">Notícias</span>
                                 </h2>
                                 <div class="mt-2 w-full h-1 bg-[#ed1c24] rounded-full opacity-20 relative">
-                                    <div class="absolute inset-0 w-32 h-full bg-[#ed1c24] rounded-full shadow-[0_0_10px_rgba(237,28,36,0.5)]"></div>
+                                    <div class="absolute inset-0 w-48 h-full bg-[#ed1c24] rounded-full shadow-[0_0_15px_rgba(237,28,36,0.6)]"></div>
                                 </div>
                             </div>
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-8 mb-8">
