@@ -44,7 +44,7 @@
                         <div class="lg:col-span-2">
                             <!-- Seção Estática de Últimas Notícias -->
                             <div class="flex flex-col mb-8 relative">
-                                <h2 class="text-3xl md:text-4xl font-black text-slate-900 dark:text-white tracking-tighter uppercase italic">
+                                <h2 class="text-3xl md:text-4xl font-black text-black tracking-tighter uppercase italic">
                                     Últimas <span class="text-[#ed1c24]">Notícias</span>
                                 </h2>
                                 <div class="mt-2 w-full h-1 bg-[#ed1c24] rounded-full opacity-20 relative">
