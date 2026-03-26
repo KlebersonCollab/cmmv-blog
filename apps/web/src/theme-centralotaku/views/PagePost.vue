@@ -448,8 +448,6 @@
         </div>
     </div>
 
-    <!-- Taboola JS Code -->
-    <div v-if="adSettings.enableAds && adSettings.enableTaboolaAds && adSettings.taboolaJsCode" v-html="adSettings.taboolaJsCode"></div>
 </template>
 
 <script setup lang="ts">
