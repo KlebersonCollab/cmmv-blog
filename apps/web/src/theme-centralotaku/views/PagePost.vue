@@ -9,6 +9,7 @@
             </div>
 
             <div v-else>
+
                 <!-- Top AdSense Banner -->
                 <div v-if="adSettings.enableAds && adSettings.articlePageHeader" class="w-full bg-gray-100 rounded-lg mb-8 overflow-hidden flex justify-center">
                     <div class="ad-container ad-banner-top py-2 px-4" v-if="getAdHtml('header')">
@@ -455,7 +456,7 @@
 //@ts-nocheck
 import {
     ref, computed, onServerPrefetch,
-    onMounted, watchEffect, watch, onUnmounted
+    onMounted, watchEffect, watch, onUnmounted, inject
 } from 'vue'
 import { useRoute } from 'vue-router'
 import { useHead } from '@unhead/vue'
@@ -1076,7 +1077,7 @@ const commentsObserverInstance = ref<IntersectionObserver | null>(null)
 
 const isMounted = ref(false);
 
-onMounted(() => {
+onMounted(async () => {
     isMounted.value = true;
     isDesktop.value = window.innerWidth > 768;
 

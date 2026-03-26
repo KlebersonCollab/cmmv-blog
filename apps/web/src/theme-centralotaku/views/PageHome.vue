@@ -1,12 +1,12 @@
 <template>
     <div class="w-full max-w-[1200px] mx-auto px-4">
         <h1 class="sr-only" v-if="settings">{{ settings.title }} - {{ settings.description }}</h1>
-        <div v-if="error" class="text-center py-20 bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800">
+        <div v-if="error" class="text-center py-20 bg-white rounded-2xl shadow-sm border border-slate-100">
             <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 mx-auto text-red-500 mb-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
-            <h2 class="text-2xl font-bold mb-3 text-slate-800 dark:text-slate-100">Erro ao carregar posts</h2>
-            <p class="text-slate-600 dark:text-slate-400 mb-8">Não foi possível carregar os posts. Por favor, tente novamente.</p>
+            <h2 class="text-2xl font-bold mb-3 text-slate-800">Erro ao carregar posts</h2>
+            <p class="text-slate-600 mb-8">Não foi possível carregar os posts. Por favor, tente novamente.</p>
             <button @click="loadPosts" class="px-6 py-2.5 bg-[#ed1c24] text-white rounded-lg hover:bg-[#c5131a] transition-all shadow-md hover:shadow-lg active:scale-95 font-semibold">
                 Tentar novamente
             </button>
@@ -90,9 +90,9 @@
                                 </div>
                             </div>
 
-                            <div v-if="loadingMore" class="mt-12 flex justify-center items-center py-10 bg-white/50 dark:bg-slate-900/50 rounded-xl backdrop-blur-sm border border-slate-100 dark:border-slate-800">
+                            <div v-if="loadingMore" class="mt-12 flex justify-center items-center py-10 bg-white/50 rounded-xl backdrop-blur-sm border border-slate-100">
                                 <div class="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-[#ed1c24]"></div>
-                                <span class="ml-4 text-slate-600 dark:text-slate-400 font-medium">Carregando mais posts...</span>
+                                <span class="ml-4 text-slate-600 font-medium">Carregando mais posts...</span>
                             </div>
 
                             <div ref="observerTarget" class="h-4 w-full"></div>

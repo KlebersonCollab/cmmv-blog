@@ -117,7 +117,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, watch } from 'vue';
+import { ref, computed, onMounted, watch, onServerPrefetch, inject } from 'vue';
 import { useRoute } from 'vue-router';
 import { useHead } from '@unhead/vue';
 import { vue3 } from '@cmmv/blog/client';
@@ -169,12 +169,49 @@ const headData = computed(() => {
 
 useHead(headData);
 
+onServerPrefetch(async () => {
+    const slug = route.params.slug as string;
+    if (!slug) return;
+
+    try {
+        const response = await blogAPI.categories.getBySlug(slug);
+        if (response) {
+            category.value = response.category;
+            posts.value = response.posts?.data || [];
+            totalPosts.value = response.posts?.count || 0;
+            hasMorePosts.value = posts.value.length < totalPosts.value;
+
+            if (globalThis) {
+                if (!globalThis.__SSR_DATA__)
+                    globalThis.__SSR_DATA__ = {};
+
+                globalThis.__SSR_DATA__[`category_${slug}`] = response;
+            }
+        }
+    } catch (e) {
+        console.error('SSR Error loading category data:', e);
+    }
+});
+
 const loadCategoryData = async () => {
     const slug = route.params.slug as string;
     if (!slug) return;
 
     loading.value = true;
     try {
+        // Try hydration first
+        const preloaded = inject<any>('preloaded', {});
+        const preloadedData = preloaded[`category_${slug}`] || (window.__CMMV_DATA__ ? window.__CMMV_DATA__[`category_${slug}`] : null);
+
+        if (preloadedData) {
+            category.value = preloadedData.category;
+            posts.value = preloadedData.posts?.data || [];
+            totalPosts.value = preloadedData.posts?.count || 0;
+            hasMorePosts.value = posts.value.length < totalPosts.value;
+            loading.value = false;
+            return;
+        }
+
         const response = await blogAPI.categories.getBySlug(slug);
         if (response) {
             category.value = response.category;
