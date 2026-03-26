@@ -497,8 +497,15 @@ const filteredPopularPosts = computed(() => {
     return popularPosts.value.filter(p => p.id !== post.value.id).slice(0, 4);
 });
 
-if(!isSSR)
-    post.value = window.__CMMV_DATA__["post"]
+// SSR Hydration Data
+if (!isSSR) {
+    const preloaded = inject<any>('preloaded', {});
+    if (preloaded && preloaded['post']) {
+        post.value = preloaded['post'];
+    } else if (window.__CMMV_DATA__ && window.__CMMV_DATA__["post"]) {
+        post.value = window.__CMMV_DATA__["post"]
+    }
+}
 
 // Helper function to handle boolean settings (could be 1, true, etc)
 const isTruthy = (value: any): boolean => {
@@ -782,9 +789,18 @@ const getAuthor = (post: any) => {
 };
 
 onServerPrefetch(async () => {
-    post.value = route.params.id
-            ? await blogAPI.posts.getById(route.params.id as string)
-            : await blogAPI.posts.getBySlug(route.params.slug as string);
+    const fetchedPost = route.params.id
+        ? await blogAPI.posts.getById(route.params.id as string)
+        : await blogAPI.posts.getBySlug(route.params.slug as string);
+
+    post.value = fetchedPost;
+
+    if (globalThis) {
+        if (!globalThis.__SSR_DATA__)
+            globalThis.__SSR_DATA__ = {};
+
+        globalThis.__SSR_DATA__["post"] = fetchedPost;
+    }
 })
 
 watchEffect(() => {
@@ -1064,12 +1080,22 @@ onMounted(() => {
     isMounted.value = true;
     isDesktop.value = window.innerWidth > 768;
 
-    window.addEventListener('resize', () => {
-        if (isMounted.value)
-            isDesktop.value = window.innerWidth > 768;
-    });
 
-    window.addEventListener('scroll', handleScroll);
+    // Fallback fetch if hydration failed or for client-side navigation
+    if (!post.value) {
+        try {
+            const slug = route.params.slug as string;
+            const id = route.params.id as string;
+            if (slug || id) {
+                post.value = id
+                    ? await blogAPI.posts.getById(id)
+                    : await blogAPI.posts.getBySlug(slug);
+            }
+        } catch (error) {
+            console.error('Error fetching post on mount:', error);
+        }
+    }
+
     setupLazyLoading();
     loadAdScripts();
 });
