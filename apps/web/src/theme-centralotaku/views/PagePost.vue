@@ -41,13 +41,13 @@
 
                                     <div v-if="post.featureImage" class="post-featured-image relative overflow-hidden rounded-xl shadow-lg mb-10">
 
-                                                                <OptimizedImage
+                        <OptimizedImage
                             :src="post.featureImage"
                             :alt="post.featureImageAlt || post.title"
                             class="featured-img md:block hidden imgix-lazy"
                             width="890"
                             height="606"
-                            loading="lazy"
+                            loading="eager"
                             priority="high"
                             icon-size="lg"
                             :title="post.featureImageAlt || 'Imagem de destaque'"

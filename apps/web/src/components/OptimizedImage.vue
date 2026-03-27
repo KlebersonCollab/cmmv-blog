@@ -11,7 +11,7 @@
             :class="imageClasses"
             :width="width"
             :height="height"
-            :loading="loading"
+            :loading="computedLoading"
             :fetchpriority="priority"
             :title="title"
             :aria-label="ariaLabel"
@@ -150,6 +150,11 @@ const computedSrcset = computed(() => {
     return undefined;
 });
 
+const computedLoading = computed(() => {
+    if (props.priority === 'high') return 'eager';
+    return props.loading;
+});
+
 const imageClasses = computed(() => {
     const baseClasses = [
         'w-full h-full',
@@ -158,7 +163,7 @@ const imageClasses = computed(() => {
     ];
 
     // Apply transitions only to lazy-loaded images to avoid affecting LCP
-    if (props.loading === 'lazy') {
+    if (computedLoading.value === 'lazy') {
         if (props.transition) {
             baseClasses.push('transition-transform duration-300');
         }
