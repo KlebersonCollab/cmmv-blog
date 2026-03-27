@@ -2904,8 +2904,8 @@ const startBulkDelete = async (): Promise<void> => {
             bulkDeleteProgress.value.currentItem = item.title;
 
             try {
-                // Chamar a API para excluir o item
-                await feedClient.raw.deleteRaw(itemId);
+                // Chamar a API para excluir o item via soft-delete (reject)
+                await feedClient.raw.rejectRaw(itemId);
                 
                 bulkDeleteProgress.value.processedItems.push({
                     id: item.id,
