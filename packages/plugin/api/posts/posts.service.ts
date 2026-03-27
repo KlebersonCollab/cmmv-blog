@@ -98,9 +98,9 @@ export class PostsPublicService {
             deleted: false
         }, [], {
             select: [
-                "id", "title", "slug", "content", "status", "autoPublishAt",
+                "id", "title", "slug", "excerpt", "status", "autoPublishAt",
                 "authors", "author", "featureImage", "publishedAt",
-                "updatedAt", "createdAt", "comments", "views", "tags", "excerpt",
+                "updatedAt", "createdAt", "comments", "views", "tags",
                 "categories"
             ],
             order: {
@@ -200,9 +200,9 @@ export class PostsPublicService {
 
         const posts = await Repository.findAll(PostsEntity, findQuery, [], {
             select: [
-                "id", "title", "slug", "content", "status", "autoPublishAt",
+                "id", "title", "slug", "excerpt", "status", "autoPublishAt",
                 "authors", "author", "featureImage", "publishedAt",
-                "updatedAt", "createdAt", "comments", "views", "tags", "excerpt",
+                "updatedAt", "createdAt", "comments", "views", "tags",
                 "categories"
             ],
             order: {
@@ -625,7 +625,9 @@ export class PostsPublicService {
             slug,
             type: "post",
             status: "published"
-        }));
+        }), {
+            select: ["id"]
+        });
 
         if(!post)
             throw new Error("Post not found");
@@ -698,100 +700,76 @@ export class PostsPublicService {
             ]
         });
 
-        if(post){
-            if(post.featureImage){
-                post.featureImage = await this.processImageIfNeeded(
-                    post.featureImage,
-                    "webp",
-                    1200,
-                    675,
-                    80,
-                    "",
-                    ""
-                );
-            }
+        if (post) {
+            const userIdsIn = [...new Set<string>(post.authors || [])];
+            const categoryIn = [...new Set<string>((
+                post.categories && post.categories.length > 0 ? post.categories : []
+            ))];
 
-            const meta: any = await Repository.findOne(MetaEntity, Repository.queryBuilder({
-                post: post.id
-            }), {
-                select: [
-                    'id', 'post', 'metaDescription', 'metaTitle',
-                    'ogDescription', 'ogImage', 'ogTitle', 'twitterDescription', 'twitterImage',
-                    'twitterTitle'
-                ]
-            });
+            // Run all secondary queries and feature image processing in parallel
+            const [
+                meta,
+                authorsData,
+                categoriesData,
+                tagsData,
+                processedFeatureImage
+            ] = await Promise.all([
+                Repository.findOne(MetaEntity, Repository.queryBuilder({ post: post.id }), {
+                    select: [
+                        'id', 'post', 'metaDescription', 'metaTitle',
+                        'ogDescription', 'ogImage', 'ogTitle', 'twitterDescription', 'twitterImage',
+                        'twitterTitle'
+                    ]
+                }),
+                userIdsIn.length > 0
+                    ? Repository.findAll(ProfilesEntity, { user: In(userIdsIn), limit: 100 }, [], {
+                        select: [
+                            'id', 'user', 'name', 'slug', 'image', 'coverImage',
+                            'bio', 'website', 'location', 'facebook', 'twitter',
+                            'instagram', 'linkedin', 'github', 'locale',
+                            'visibility', 'metaTitle', 'metaDescription'
+                        ]
+                    })
+                    : Promise.resolve({ data: [] }),
+                categoryIn.length > 0
+                    ? Repository.findAll(CategoriesEntity, { id: In(categoryIn), limit: 100 }, [], {
+                        select: ["id", "name", "slug", "description"]
+                    })
+                    : Promise.resolve({ data: [] }),
+                post.tags && post.tags.length > 0
+                    ? Repository.findAll(TagsEntity, { name: In(post.tags), limit: 100 }, [], {
+                        select: ["id", "name", "slug", "description"]
+                    })
+                    : Promise.resolve({ data: [] }),
+                post.featureImage
+                    ? this.processImageIfNeeded(post.featureImage, "webp", 1200, 675, 80, "", "")
+                    : Promise.resolve(null),
+            ]);
 
             post.meta = meta;
+            if (processedFeatureImage) post.featureImage = processedFeatureImage;
+            post.categories = categoriesData?.data || [];
+            post.tags = tagsData?.data || [];
 
-            let userIdsIn = [...post.authors];
-            let categoryIdsIn = (post.categories && post.categories.length > 0) ? [...post.categories] : [];
+            const authors: any[] = authorsData?.data || [];
 
-            //@ts-ignore
-            const usersIn = [...new Set(userIdsIn)];
-            //@ts-ignore
-            const categoryIn = [...new Set(categoryIdsIn)];
+            // Process all author images in parallel
+            await Promise.all(
+                authors.map(async (author: any) => {
+                    const [img, cover] = await Promise.all([
+                        author.image
+                            ? this.processImageIfNeeded(author.image, "webp", 128, 128, 80, "", "")
+                            : Promise.resolve(null),
+                        author.coverImage
+                            ? this.processImageIfNeeded(author.coverImage, "webp", 1024, 300, 80, "", "")
+                            : Promise.resolve(null),
+                    ]);
+                    if (img) author.image = img;
+                    if (cover) author.coverImage = cover;
+                })
+            );
 
-            //Authors
-            const authorsData = await Repository.findAll(ProfilesEntity, {
-                user: In(usersIn),
-                limit: 100
-            }, [], {
-                select: [
-                    'id', 'user', 'name', 'slug', 'image', 'coverImage',
-                    'bio', 'website', 'location', 'facebook', 'twitter',
-                    'instagram', 'linkedin', 'github', 'locale',
-                    'visibility', 'metaTitle', 'metaDescription'
-                ]
-            });
-
-            post.authors = (authorsData) ? authorsData.data : [];
-
-            for(let key in post.authors){
-                if(post.authors[key].image){
-                    post.authors[key].image = await this.processImageIfNeeded(
-                        post.authors[key].image,
-                        "webp",
-                        128,
-                        128,
-                        80,
-                        "",
-                        ""
-                    );
-                }
-
-                if(post.authors[key].coverImage){
-                    post.authors[key].coverImage = await this.processImageIfNeeded(
-                        post.authors[key].coverImage,
-                        "webp",
-                        1024,
-                        300,
-                        80,
-                        "",
-                        ""
-                    );
-                }
-            }
-
-            if(categoryIn.length > 0){
-                const categoriesData = await Repository.findAll(CategoriesEntity, {
-                    id: In(categoryIn),
-                    limit: 100
-                }, [], {
-                    select: [ "id", "name", "slug", "description" ]
-                });
-
-                post.categories = (categoriesData) ? categoriesData.data : [];
-            }
-
-            //Tags
-            const tagsData = await Repository.findAll(TagsEntity, {
-                name: In(post.tags),
-                limit: 100
-            }, [], {
-                select: [ "id", "name", "slug", "description" ]
-            });
-
-            post.tags = (tagsData) ? tagsData.data : [];
+            post.authors = authors;
         }
 
         return JSON.stringify(post);

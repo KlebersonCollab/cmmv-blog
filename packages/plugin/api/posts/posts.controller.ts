@@ -97,6 +97,7 @@ export class PostsController {
         exposeFilters: true,
         exclude: true
     })
+    @Cache("post:id:")
     @CacheControl({ maxAge: 3600, public: true })
     @ContentType('application/json')
     @Raw()
