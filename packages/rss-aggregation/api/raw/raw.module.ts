@@ -8,7 +8,11 @@ import {
     RawController
 } from "./raw.controller";
 
+import {
+    ContentSanitizer
+} from "./content-sanitizer";
+
 export const RSSRawModule = new Module('rss-raw', {
-    providers: [RawService],
+    providers: [RawService, ContentSanitizer],
     controllers: [RawController]
 });

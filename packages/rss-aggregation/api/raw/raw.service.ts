@@ -15,6 +15,8 @@ import { PromptsServiceTools } from "@cmmv/blog/prompts/prompts.service";
 //@ts-ignore
 import { ParserService } from "../parser/parser.service";
 
+import { ContentSanitizer } from "./content-sanitizer";
+
 interface AIJob {
     id: string;
     rawId: string;
@@ -34,7 +36,8 @@ export class RawService {
 
     constructor(
         private readonly aiContentService: AIContentService,
-        private readonly parserService: ParserService
+        private readonly parserService: ParserService,
+        private readonly contentSanitizer: ContentSanitizer
     ) {}
 
     /**
@@ -434,6 +437,26 @@ export class RawService {
                         this.logger.error(`Failed to parse continuation text: ${continuationError}`);
                         this.logger.error(`Using only the original text for raw feed item ${job.rawId}`);
                     }
+                }
+
+                // Sanitize: remove invalid links, invalid videos and duplicate images
+                try {
+                    this.logger.log(`[Job ${jobId}] Sanitizing content for raw ${job.rawId}...`);
+                    const sanitizeResult = await this.contentSanitizer.sanitize(
+                        parsedContent.content,
+                        raw.featureImage
+                    );
+                    parsedContent.content = sanitizeResult.html;
+
+                    const { removedLinks, removedVideos, removedImages } = sanitizeResult.stats;
+                    if (removedLinks.length > 0)
+                        this.logger.log(`[Job ${jobId}] Removed ${removedLinks.length} invalid link(s): ${removedLinks.join(', ')}`);
+                    if (removedVideos.length > 0)
+                        this.logger.log(`[Job ${jobId}] Removed ${removedVideos.length} invalid video/embed(s)`);
+                    if (removedImages.length > 0)
+                        this.logger.log(`[Job ${jobId}] Removed ${removedImages.length} duplicate image(s)`);
+                } catch (sanitizeError) {
+                    this.logger.error(`[Job ${jobId}] Content sanitization failed (continuing with unsanitized content): ${sanitizeError}`);
                 }
 
                 const result = {
