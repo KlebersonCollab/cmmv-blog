@@ -2,7 +2,7 @@
     <a :href="`/post/${post.slug}`" class="group flex bg-white rounded-xl overflow-hidden shadow-sm hover:shadow-lg transition-all duration-300 border border-slate-100 hover:-translate-y-1 relative">
         <div class="w-1/3 overflow-hidden">
             <div v-if="post.categories && post.categories.length > 0" class="absolute top-2 left-2 z-10">
-                <span class="bg-[#ed1c24]/90 backdrop-blur-sm text-white text-[8px] px-1.5 py-0.5 rounded-full font-bold uppercase tracking-wider shadow-sm">
+                <span class="bg-[#c5131a]/90 backdrop-blur-sm text-white text-[8px] px-1.5 py-0.5 rounded-full font-bold uppercase tracking-wider shadow-sm">
                     {{ post.categories[0].name }}
                 </span>
             </div>
@@ -15,14 +15,14 @@
         </div>
         <div class="w-2/3 p-4 flex flex-col justify-between">
             <div>
-                <h3 class="text-sm font-bold text-slate-800 group-hover:text-[#ed1c24] transition-colors duration-300 line-clamp-2 mb-2 leading-snug">
+                <h3 class="text-sm font-bold text-slate-800 group-hover:text-[#c5131a] transition-colors duration-300 line-clamp-2 mb-2 leading-snug">
                     {{ post.title }}
                 </h3>
                 <p class="text-xs text-slate-600 line-clamp-2 hidden sm:block leading-relaxed">
                     {{ post.excerpt || stripHtml(post.content).substring(0, 80) + '...' }}
                 </p>
             </div>
-            <div class="text-[10px] font-medium text-slate-400 mt-2 uppercase tracking-tight">
+            <div class="text-[10px] font-medium text-slate-500 mt-2 uppercase tracking-tight">
                 <span>{{ formatDate(post.publishedAt) }}</span>
             </div>
         </div>

@@ -17,22 +17,22 @@
         </div>
       </div>
       <div v-if="post.categories && post.categories.length > 0" class="absolute top-3 left-3">
-         <span class="bg-[#ed1c24]/90 backdrop-blur-sm text-white text-[9px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider shadow-sm">
+         <span class="bg-[#c5131a]/90 backdrop-blur-sm text-white text-[9px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider shadow-sm">
            {{ post.categories[0].name }}
          </span>
       </div>
     </a>
     <div class="p-4 flex flex-col flex-grow">
-      <div class="flex items-center text-[10px] font-medium text-slate-400 mb-2 uppercase tracking-tight">
+      <div class="flex items-center text-[10px] font-medium text-slate-500 mb-2 uppercase tracking-tight">
         <span>{{ formatDate(post.publishedAt || post.updatedAt, true) }}</span>
       </div>
       <a :href="`/post/${post.slug}`" class="block flex-grow">
-        <h3 class="text-md font-bold text-slate-800 mb-2 group-hover:text-[#ed1c24] transition-colors line-clamp-2 leading-snug">
+        <h3 class="text-md font-bold text-slate-800 mb-2 group-hover:text-[#c5131a] transition-colors line-clamp-2 leading-snug">
           {{ post.title }}
         </h3>
       </a>
       <div class="mt-auto pt-3 border-t border-slate-50">
-        <a :href="`/post/${post.slug}`" class="text-[10px] font-bold text-[#ed1c24] hover:text-[#c5131a] transition-colors inline-flex items-center group/link uppercase tracking-wider">
+        <a :href="`/post/${post.slug}`" class="text-[10px] font-bold text-[#c5131a] hover:text-[#991b1b] transition-colors inline-flex items-center group/link uppercase tracking-wider">
           LER AGORA 
           <svg xmlns="http://www.w3.org/2000/svg" class="h-2.5 w-2.5 ml-1 transition-transform group-hover/link:translate-x-1" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6" /></svg>
         </a>

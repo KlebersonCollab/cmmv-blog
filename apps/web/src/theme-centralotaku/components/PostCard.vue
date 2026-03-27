@@ -21,13 +21,13 @@
       <div class="flex items-center text-[10px] uppercase font-bold mb-3 tracking-wider">
         <a v-if="post.categories && post.categories.length > 0"
            :href="`/category/${post.categories[0].slug}`"
-           class="bg-[#ed1c24] text-white px-2 py-0.5 rounded-md hover:bg-[#c5131a] transition-colors mr-3">
+           class="bg-[#c5131a] text-white px-2 py-0.5 rounded-md hover:bg-[#a00f15] transition-colors mr-3">
           {{ post.categories[0].name }}
         </a>
-        <span class="text-slate-400 font-medium">{{ formatDate(post.publishedAt, true) }}</span>
+        <span class="text-slate-500 font-medium">{{ formatDate(post.publishedAt, true) }}</span>
       </div>
       <a :href="`/post/${post.slug}`" class="block flex-grow">
-        <h3 class="text-lg font-bold text-slate-900 mb-2 group-hover:text-[#ed1c24] transition-colors line-clamp-2 leading-snug">
+        <h3 class="text-lg font-bold text-slate-900 mb-2 group-hover:text-[#c5131a] transition-colors line-clamp-2 leading-snug">
           {{ post.title }}
         </h3>
         <p class="text-slate-600 text-sm mb-4 line-clamp-2 leading-relaxed">
@@ -35,7 +35,7 @@
         </p>
       </a>
       <div class="mt-auto pt-4 border-t border-slate-50">
-        <a :href="`/post/${post.slug}`" class="text-xs font-bold text-[#ed1c24] hover:text-[#c5131a] transition-colors inline-flex items-center group/link">
+        <a :href="`/post/${post.slug}`" class="text-xs font-bold text-[#c5131a] hover:text-[#991b1b] transition-colors inline-flex items-center group/link">
           LER MATÉRIA 
           <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 ml-1 transition-transform group-hover/link:translate-x-1" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6" /></svg>
         </a>
