@@ -577,10 +577,8 @@ const adSettings = computed(() => {
     return result;
 });
 
-const adsReady = ref(false);
-
 const getAdHtml = (position) => {
-    if (!adSettings.value.enableAds || !adsReady.value) return '';
+    if (!adSettings.value.enableAds) return '';
 
     const positionSetting = `articlePage${position.charAt(0).toUpperCase() + position.slice(1)}`;
 
@@ -1084,13 +1082,6 @@ const commentsObserverInstance = ref<IntersectionObserver | null>(null)
 const isMounted = ref(false);
 
 onMounted(async () => {
-    if (typeof window !== 'undefined') {
-        if ('requestIdleCallback' in window) {
-            requestIdleCallback(() => { adsReady.value = true; }, { timeout: 2000 });
-        } else {
-            setTimeout(() => { adsReady.value = true; }, 1000);
-        }
-    }
 
     isMounted.value = true;
     isDesktop.value = window.innerWidth > 768;
