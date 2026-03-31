@@ -303,17 +303,13 @@ useHead({
             type: 'image/ico',
             href: '/src/theme-centralotaku/favicon.ico?v=2'
         },
-        { rel: 'preconnect', href: 'https://www.googletagmanager.com/' },
-        { rel: 'preconnect', href: 'https://www.google-analytics.com/' },
-        { rel: 'preconnect', href: 'https://www.googletag.com/' },
-        { rel: 'preconnect', href: 'https://connect.facebook.net/' },
-        { rel: 'preconnect', href: 'https://securepubads.g.doubleclick.net/' },
-        { rel: 'preconnect', href: 'https://tpc.googlesyndication.com/' },
-        { rel: 'preconnect', href: 'https://www.googletag.com/' },
         { rel: 'preconnect', href: 'https://static.centralotaku.com.br/' },
         { rel: 'dns-prefetch', href: 'https://www.googletagmanager.com/' },
-        { rel: 'dns-prefetch', href: 'https://securepubads.g.doubleclick.net' },
-        { rel: 'dns-prefetch', href: 'https://static.centralotaku.com.br/' },
+        { rel: 'dns-prefetch', href: 'https://www.google-analytics.com/' },
+        { rel: 'dns-prefetch', href: 'https://www.googletag.com/' },
+        { rel: 'dns-prefetch', href: 'https://connect.facebook.net/' },
+        { rel: 'dns-prefetch', href: 'https://securepubads.g.doubleclick.net/' },
+        { rel: 'dns-prefetch', href: 'https://tpc.googlesyndication.com/' },
         { rel: 'alternate', href: `${settings.value['blog.url']}/feed`, type: 'application/rss+xml', title: settings.value['blog.title'] }
     ],
 

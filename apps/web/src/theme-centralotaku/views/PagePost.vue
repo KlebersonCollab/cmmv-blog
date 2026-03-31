@@ -44,13 +44,14 @@
                         <OptimizedImage
                             :src="post.featureImage"
                             :alt="post.featureImageAlt || post.title"
-                            class="featured-img md:block hidden imgix-lazy"
+                            class="featured-img md:block hidden"
                             width="890"
                             height="606"
                             loading="eager"
                             priority="high"
                             icon-size="lg"
                             :title="post.featureImageAlt || 'Imagem de destaque'"
+                            sizes="(max-width: 1024px) 100vw, 890px"
                         />
 
                                         <p v-if="post.featureImageCaption" class="image-caption text-neutral-600 text-sm mt-2 text-center">{{
@@ -244,9 +245,10 @@
                                                 v-if="relatedPost.featureImage"
                                                 :src="relatedPost.featureImage"
                                                 :alt="relatedPost.title"
-                                                class="w-full h-full object-cover transition-transform hover:scale-105 duration-300 imgix-lazy"
+                                                class="w-full h-full object-cover transition-transform hover:scale-105 duration-300"
                                                 :hover="true"
                                                 icon-size="md"
+                                                sizes="(max-width: 768px) 100vw, (max-width: 1280px) 50vw, 330px"
                                             />
                                                             <div v-else class="w-full h-full bg-gray-200 flex items-center justify-center">
                                                                 <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
