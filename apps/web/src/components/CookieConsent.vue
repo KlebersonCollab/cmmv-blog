@@ -5,7 +5,7 @@
                 <div class="flex-1">
                     <p class="text-sm md:text-base text-neutral-200">
                         Este site utiliza cookies para melhorar sua experiência de navegação. Ao continuar usando este site, você concorda com o uso de cookies conforme nossa
-                        <a href="/termos-de-privacidade" class="text-[#ed1c24] hover:text-[#c5131a] underline">Política de Privacidade</a>.
+                        <a href="/termos-de-privacidade" class="text-red-400 hover:text-red-300 underline focus:outline-none focus:ring-2 focus:ring-red-400 rounded-sm">Política de Privacidade</a>.
                     </p>
                 </div>
                 <div class="flex flex-shrink-0 gap-3">
@@ -17,7 +17,7 @@
                     </button>
                     <button
                         @click="acceptCookies"
-                        class="px-4 py-2 text-sm bg-[#ed1c24] hover:bg-[#c5131a] rounded-md text-white font-medium transition-colors cursor-pointer"
+                        class="px-4 py-2 text-sm bg-[#c5131a] hover:bg-[#a00f15] rounded-md text-white font-medium transition-colors cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#c5131a] focus:ring-offset-2 focus:ring-offset-neutral-800"
                     >
                         Aceitar
                     </button>

@@ -43,13 +43,13 @@
                             </a>
                         </div>
 
-                        <button @click="openSearchModal" class="text-gray-500 hover:text-[#ed1c24] transition-colors p-1" aria-label="Pesquisar">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+                        <button @click="openSearchModal" class="text-gray-500 hover:text-[#ed1c24] transition-colors p-1 rounded-md focus:outline-none focus:ring-2 focus:ring-[#ed1c24] focus:ring-offset-2" aria-label="Pesquisar">
+                            <svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
                         </button>
 
                         <!-- Mobile Menu Button -->
-                        <button @click="mobileMenuOpen = !mobileMenuOpen" class="md:hidden text-gray-600 ml-2" title="Navbar" aria-label="Navbar">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <button @click="mobileMenuOpen = !mobileMenuOpen" class="md:hidden text-gray-600 ml-2 rounded-md focus:outline-none focus:ring-2 focus:ring-[#ed1c24] focus:ring-offset-2" title="Navbar" aria-label="Alternar menu de navegação">
+                            <svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" class="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path v-if="mobileMenuOpen" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
                                 <path v-else stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
                             </svg>
@@ -147,8 +147,8 @@
                         <form class="space-y-2" @submit.prevent>
                             <div class="relative">
                                 <input id="newsletter-email" name="email" type="email" autocomplete="email" placeholder="Seu melhor e-mail" class="w-full bg-slate-900 border border-slate-800 rounded-lg px-4 py-2.5 text-xs focus:ring-2 focus:ring-[#ed1c24] focus:border-transparent outline-none transition-all placeholder:text-slate-600">
-                                <button type="submit" aria-label="Inscrever-se na newsletter" class="absolute right-1 top-1 bottom-1 bg-[#ed1c24] text-white px-3 rounded-md hover:bg-[#c5131a] transition-colors flex items-center justify-center">
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3" /></svg>
+                                <button type="submit" aria-label="Inscrever-se na newsletter" class="absolute right-1 top-1 bottom-1 bg-[#ed1c24] text-white px-3 rounded-md hover:bg-[#c5131a] transition-colors flex items-center justify-center focus:outline-none focus:ring-2 focus:ring-[#ed1c24] focus:ring-offset-2">
+                                    <svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3" /></svg>
                                 </button>
                             </div>
                         </form>
@@ -156,14 +156,14 @@
                 </div>
 
                 <div class="border-t border-slate-900 pt-8 flex flex-col md:flex-row justify-between items-center gap-4">
-                    <p class="text-[10px] uppercase font-bold tracking-widest text-slate-500">
+                    <p class="text-[10px] uppercase font-bold tracking-widest text-slate-400">
                         © {{ new Date().getFullYear() }} Central Otaku — Um portal do universo Geek
                     </p>
-                    <div class="flex items-center space-x-6 text-[10px] font-bold uppercase tracking-widest">
-                        <span class="text-slate-600">Powered by CMMV Framework</span>
-                        <a href="#top" class="text-[#ed1c24] hover:text-[#c5131a] transition-colors flex items-center">
+                    <div class="flex items-center space-x-6 text-[10px] font-bold uppercase tracking-widest text-slate-400">
+                        <span>Powered by CMMV Framework</span>
+                        <a href="#top" class="text-[#ed1c24] hover:text-[#c5131a] transition-colors flex items-center focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-950 focus:ring-[#ed1c24] rounded-sm">
                             Voltar ao topo
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7" /></svg>
+                            <svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7" /></svg>
                         </a>
                     </div>
                 </div>
@@ -184,8 +184,8 @@
                                     <h3 class="text-lg leading-6 font-medium text-gray-900" id="modal-title">
                                         Pesquisar
                                     </h3>
-                                    <button @click="closeSearchModal" class="text-gray-400 hover:text-gray-500 focus:outline-none">
-                                        <svg class="h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <button @click="closeSearchModal" aria-label="Fechar busca" class="text-gray-400 hover:text-gray-500 rounded-md focus:outline-none focus:ring-2 focus:ring-[#ed1c24] focus:ring-offset-2">
+                                        <svg aria-hidden="true" class="h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
                                         </svg>
                                     </button>

@@ -38,7 +38,7 @@
                 <div v-for="(post, index) in coverPosts.carousel" :key="post.id"
                      class="absolute w-full h-full transition-opacity duration-500 ease-in-out"
                      :class="{ 'opacity-100': currentCarouselIndex === index, 'opacity-0': currentCarouselIndex !== index }">
-                    <a :href="`/post/${post.slug}`" class="block h-full">
+                    <a :href="`/post/${post.slug}`" class="block h-full focus:outline-none focus:ring-2 focus:ring-[#ed1c24] focus:ring-offset-2 rounded-lg">
                         <OptimizedImage
                             :src="post.featureImage"
                             :alt="post.title"
@@ -46,7 +46,8 @@
                             aria-label="Cover Image"
                             width="890"
                             height="606"
-                            priority="high"
+                            :priority="index === 0 ? 'high' : 'auto'"
+                            :loading="index === 0 ? 'eager' : 'lazy'"
                             icon-size="lg"
                         />
                         <div class="absolute bottom-0 left-0 right-0 p-6 bg-gradient-to-t from-black/90 via-black/70 to-transparent text-white">
@@ -68,15 +69,15 @@
 
                 <!-- Carousel Controls -->
                 <div class="absolute top-0 bottom-0 left-0 flex items-center">
-                    <button @click="prevCarouselSlide" class="bg-black/30 hover:bg-black/50 text-white p-2 rounded-r-md focus:outline-none z-10">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <button @click="prevCarouselSlide" aria-label="Slide anterior do carousel" class="bg-black/30 hover:bg-black/50 text-white p-2 rounded-r-md focus:outline-none focus:ring-2 focus:ring-white z-10">
+                        <svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
                         </svg>
                     </button>
                 </div>
                 <div class="absolute top-0 bottom-0 right-0 flex items-center">
-                    <button @click="nextCarouselSlide" class="bg-black/30 hover:bg-black/50 text-white p-2 rounded-l-md focus:outline-none z-10">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <button @click="nextCarouselSlide" aria-label="Próximo slide do carousel" class="bg-black/30 hover:bg-black/50 text-white p-2 rounded-l-md focus:outline-none focus:ring-2 focus:ring-white z-10">
+                        <svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
                         </svg>
                     </button>
@@ -88,7 +89,8 @@
                         v-for="(_, index) in coverPosts.carousel"
                         :key="index"
                         @click="currentCarouselIndex = index"
-                        class="w-3 h-3 rounded-full bg-white/50 focus:outline-none"
+                        :aria-label="`Ir para slide ${index + 1}`"
+                        class="w-3 h-3 rounded-full bg-white/50 focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-1 focus:ring-offset-transparent"
                         :class="{ 'bg-white': currentCarouselIndex === index }"
                     ></button>
                 </div>

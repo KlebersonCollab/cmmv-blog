@@ -158,18 +158,23 @@ const computedLoading = computed(() => {
 const imageClasses = computed(() => {
     const baseClasses = [
         'w-full h-full',
-        `object-${props.objectFit}`,
-        'imgix-lazy'
+        `object-${props.objectFit}`
     ];
 
-    // Apply transitions only to lazy-loaded images to avoid affecting LCP
     if (computedLoading.value === 'lazy') {
+        baseClasses.push('imgix-lazy');
+        
         if (props.transition) {
             baseClasses.push('transition-transform duration-300');
         }
 
         if (props.hover) {
             baseClasses.push('hover:scale-105');
+        }
+    } else {
+        // Para eager (LCP), podemos querer manter o efeito hover de forma direta
+        if (props.hover) {
+            baseClasses.push('hover:scale-105 transition-transform duration-300');
         }
     }
 
