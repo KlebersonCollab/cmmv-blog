@@ -577,8 +577,10 @@ const adSettings = computed(() => {
     return result;
 });
 
+const adsReady = ref(false);
+
 const getAdHtml = (position) => {
-    if (!adSettings.value.enableAds) return '';
+    if (!adSettings.value.enableAds || !adsReady.value) return '';
 
     const positionSetting = `articlePage${position.charAt(0).toUpperCase() + position.slice(1)}`;
 
@@ -714,15 +716,19 @@ function processPostContent(content) {
     });
 
     if (!isSSR && (processedContent.includes('twitter-tweet') || processedContent.includes('twitter-embed'))) {
-        setTimeout(() => {
-            loadTwitterScript();
-        }, 100);
+        if ('requestIdleCallback' in window) {
+            requestIdleCallback(() => loadTwitterScript(), { timeout: 3000 });
+        } else {
+            setTimeout(loadTwitterScript, 2500);
+        }
     }
 
     if (!isSSR && processedContent.includes('reddit-embed')) {
-        setTimeout(() => {
-            loadRedditScript();
-        }, 100);
+        if ('requestIdleCallback' in window) {
+            requestIdleCallback(() => loadRedditScript(), { timeout: 3000 });
+        } else {
+            setTimeout(loadRedditScript, 2500);
+        }
     }
 
     return processedContent;
@@ -1078,6 +1084,14 @@ const commentsObserverInstance = ref<IntersectionObserver | null>(null)
 const isMounted = ref(false);
 
 onMounted(async () => {
+    if (typeof window !== 'undefined') {
+        if ('requestIdleCallback' in window) {
+            requestIdleCallback(() => { adsReady.value = true; }, { timeout: 2000 });
+        } else {
+            setTimeout(() => { adsReady.value = true; }, 1000);
+        }
+    }
+
     isMounted.value = true;
     isDesktop.value = window.innerWidth > 768;
 
