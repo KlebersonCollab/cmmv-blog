@@ -683,31 +683,31 @@ function processPostContent(content) {
     if (!content) return '';
 
     const twitterUrlPatterns = [
-        /https?:\/\/(www\.)?twitter\.com\/([a-zA-Z0-9_]+)\/status\/([0-9]+)(\?[^\s]*)?/g,
-        /https?:\/\/(www\.)?x\.com\/([a-zA-Z0-9_]+)\/status\/([0-9]+)(\?[^\s]*)?/g
+        /(^|[^"'])(https?:\/\/(?:www\.)?twitter\.com\/[a-zA-Z0-9_]+\/status\/[0-9]+(?:\?[^\s<"']*)?)/g,
+        /(^|[^"'])(https?:\/\/(?:www\.)?x\.com\/[a-zA-Z0-9_]+\/status\/[0-9]+(?:\?[^\s<"']*)?)/g
     ];
 
     const redditUrlPatterns = [
-        /https?:\/\/(www\.)?reddit\.com\/r\/([a-zA-Z0-9_]+)\/comments\/([a-zA-Z0-9]+)(?:\/[^\/\s]+)?(?:\/([a-zA-Z0-9]+))?/g
+        /(^|[^"'])(https?:\/\/(?:www\.)?reddit\.com\/r\/[a-zA-Z0-9_]+\/comments\/[a-zA-Z0-9]+(?:\/[^\/\s<"']+)?(?:\/[a-zA-Z0-9]+)?)/g
     ];
 
     let processedContent = content;
 
     twitterUrlPatterns.forEach(pattern => {
-        processedContent = processedContent.replace(pattern, (match, p1, username, tweetId) => {
-            return `<div class="twitter-embed">
+        processedContent = processedContent.replace(pattern, (match, prefix, fullUrl) => {
+            return `${prefix}<div class="twitter-embed">
                 <blockquote class="twitter-tweet" data-dnt="true" data-theme="light">
-                    <a href="${match}"></a>
+                    <a href="${fullUrl}"></a>
                 </blockquote>
             </div>`;
         });
     });
 
     redditUrlPatterns.forEach(pattern => {
-        processedContent = processedContent.replace(pattern, (match, p1, subreddit, postId, commentId) => {
-            return `<div class="reddit-embed">
+        processedContent = processedContent.replace(pattern, (match, prefix, fullUrl) => {
+            return `${prefix}<div class="reddit-embed">
                 <div class="reddit-card" data-embed-height="500">
-                    <a href="${match}"></a>
+                    <a href="${fullUrl}"></a>
                 </div>
             </div>`;
         });
