@@ -8,11 +8,7 @@ import {
     ParserController
 } from "./parser.controller";
 
-import {
-    SecurityService
-} from "../security/security.service";
-
 export const RSSParserModule = new Module('rss-parser', {
-    providers: [ParserService, SecurityService],
+    providers: [ParserService],
     controllers: [ParserController]
 });

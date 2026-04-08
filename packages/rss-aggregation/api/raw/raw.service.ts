@@ -34,13 +34,20 @@ interface AIJob {
 export class RawService {
     private readonly logger = new Logger("RawService");
     private aiJobs: Map<string, AIJob> = new Map();
+    private securityService: SecurityService | null = null;
 
     constructor(
         private readonly aiContentService: AIContentService,
         private readonly parserService: ParserService,
-        private readonly contentSanitizer: ContentSanitizer,
-        private readonly securityService: SecurityService
-    ) {}
+        private readonly contentSanitizer: ContentSanitizer
+    ) {
+        // Attempt to initialize SecurityService manually if available
+        try {
+            this.securityService = new SecurityService();
+        } catch (error) {
+            console.warn('SecurityService could not be instantiated manually:', error);
+        }
+    }
 
     /**
      * Get raw feed items

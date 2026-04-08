@@ -55,10 +55,18 @@ interface AtomFeed {
 
 @Service()
 export class ChannelsService {
+    private securityService: SecurityService | null = null;
+
     constructor(
-        private readonly parserService: ParserService,
-        private readonly securityService: SecurityService
-    ) {}
+        private readonly parserService: ParserService
+    ) {
+        // Attempt to initialize SecurityService manually if available
+        try {
+            this.securityService = new SecurityService();
+        } catch (error) {
+            console.warn('SecurityService could not be instantiated manually:', error);
+        }
+    }
 
     @Cron(CronExpression.EVERY_HOUR)
     async handleCronChannels() {

@@ -18,12 +18,17 @@ import {
     RSSParserModule
 } from "./parser/parser.module";
 
+import {
+    SecurityService
+} from "./security/security.service";
+
 export const RSSAggregationModule = new Module('rss-aggregation', {
     contracts: [
         FeedChannelsContract,
         FeedRawContract,
         FeedParserContract
     ],
+    providers: [SecurityService],
     submodules: [
         RSSChannelsModule,
         RSSRawModule,

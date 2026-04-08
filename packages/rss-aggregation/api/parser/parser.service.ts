@@ -17,11 +17,18 @@ import { SecurityService } from "../security/security.service";
 @Service()
 export class ParserService {
     private readonly logger = new Logger("ParserService");
+    private securityService: SecurityService | null = null;
 
     constructor(
-        private readonly aiContentService: AIContentService,
-        private readonly securityService: SecurityService
-    ) {}
+        private readonly aiContentService: AIContentService
+    ) {
+        // Attempt to initialize SecurityService manually if available
+        try {
+            this.securityService = new SecurityService();
+        } catch (error) {
+            console.warn('SecurityService could not be instantiated manually:', error);
+        }
+    }
 
     /**
      * Parse a URL and extract important content information using Gemini AI
