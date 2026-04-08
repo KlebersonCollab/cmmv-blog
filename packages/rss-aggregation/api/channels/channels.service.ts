@@ -2,7 +2,7 @@ import * as xml2js from 'xml2js';
 
 import {
     Service, Cron,
-    CronExpression
+    CronExpression, Config
 } from "@cmmv/core";
 
 import {
@@ -12,6 +12,10 @@ import {
 import {
     ParserService
 } from "../parser/parser.service";
+
+import {
+    SecurityService
+} from "../security/security.service";
 
 interface RssItem {
     link: string;
@@ -51,7 +55,10 @@ interface AtomFeed {
 
 @Service()
 export class ChannelsService {
-    constructor(private readonly parserService: ParserService){}
+    constructor(
+        private readonly parserService: ParserService,
+        private readonly securityService: SecurityService
+    ) {}
 
     @Cron(CronExpression.EVERY_HOUR)
     async handleCronChannels() {
@@ -108,7 +115,7 @@ export class ChannelsService {
 
             let itemsAdded = 0;
 
-            const GLOBAL_TIMEOUT = 600000;
+            const GLOBAL_TIMEOUT = Config.get("security.channels.globalTimeout", 600000);
             const startTime = Date.now();
             const results = [];
 
@@ -125,7 +132,7 @@ export class ChannelsService {
 
                     if(channel.lastUpdate < new Date(Date.now() - channel.intervalUpdate) || force){
                         try {
-                            const channelTimeout = 120000;
+                            const channelTimeout = Config.get("security.channels.channelTimeout", 120000);
 
                             await Promise.race([
                                 this.processSingleChannel(channel),
@@ -220,6 +227,12 @@ export class ChannelsService {
 
             const xml = await response.text();
 
+            // Validate XML input for security issues (permissive approach - only warnings)
+            const validationResult = this.securityService.validateXmlInput(xml, rss);
+            if (validationResult.warnings.length > 0) {
+                this.securityService.logWarnings(validationResult.warnings);
+            }
+
             const parser = new xml2js.Parser({
                 explicitArray: false,
                 normalize: true,
@@ -228,8 +241,15 @@ export class ChannelsService {
                 attrkey: '$'
             });
 
+            // Implement configurable timeout for XML parsing (SEC-01 requirement)
+            const xmlParseTimeout = Config.get("security.xml.parseTimeout", 30000);
             return new Promise<RssFeed>((resolve, reject) => {
+                const parseTimeout = setTimeout(() => {
+                    reject(new Error(`XML parsing timeout after ${xmlParseTimeout / 1000} seconds`));
+                }, xmlParseTimeout);
+
                 parser.parseString(xml, (err, result) => {
+                    clearTimeout(parseTimeout);
                     if (err) {
                         reject(err);
                     } else {
@@ -294,9 +314,10 @@ export class ChannelsService {
                     const result = await Promise.race([
                         itemPromise,
                         new Promise((_, reject) => {
+                            const itemProcessingTimeout = Config.get("security.channels.itemProcessingTimeout", 15000);
                             setTimeout(() => {
                                 reject(new Error(`Item processing timeout for item ${processedCount} in channel: ${channelId}`));
-                            }, 15000);
+                            }, itemProcessingTimeout);
                         })
                     ]) as { success: boolean, message?: string };
 
@@ -453,9 +474,10 @@ export class ChannelsService {
                     parsedResult = await Promise.race([
                         parsePromise,
                         new Promise((_, reject) => {
+                            const parserTimeout = Config.get("security.channels.parserTimeout", 20000);
                             setTimeout(() => {
-                                reject(new Error('Parser timeout after 20 seconds'));
-                            }, 20000);
+                                reject(new Error(`Parser timeout after ${parserTimeout / 1000} seconds`));
+                            }, parserTimeout);
                         })
                     ]);
 

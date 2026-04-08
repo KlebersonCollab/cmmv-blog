@@ -16,6 +16,7 @@ import { PromptsServiceTools } from "@cmmv/blog/prompts/prompts.service";
 import { ParserService } from "../parser/parser.service";
 
 import { ContentSanitizer } from "./content-sanitizer";
+import { SecurityService } from "../security/security.service";
 
 interface AIJob {
     id: string;
@@ -37,7 +38,8 @@ export class RawService {
     constructor(
         private readonly aiContentService: AIContentService,
         private readonly parserService: ParserService,
-        private readonly contentSanitizer: ContentSanitizer
+        private readonly contentSanitizer: ContentSanitizer,
+        private readonly securityService: SecurityService
     ) {}
 
     /**
@@ -328,6 +330,12 @@ export class RawService {
                  "suggestedTags": ["tag1", "tag2", "tag3", "tag4", "tag5"],
                  "suggestedCategories": ["categoryName1", "categoryName2"]
                }`;
+
+            // Validate AI prompt for security issues (permissive approach - only warnings)
+            const promptValidationResult = this.securityService.validateAiPrompt(prompt);
+            if (promptValidationResult.warnings.length > 0) {
+                this.securityService.logWarnings(promptValidationResult.warnings);
+            }
 
             this.logger.log(`Processing AI job ${jobId} for raw ${job.rawId} using model ${job.model || 'default'}`);
             
@@ -689,6 +697,12 @@ export class RawService {
               "suggestedTags": ["tag1", "tag2", "tag3", "tag4", "tag5"],
               "suggestedCategories": ["categoryName1", "categoryName2"]
             }`;
+
+            // Validate AI prompt for security issues (permissive approach - only warnings)
+            const promptValidationResult = this.securityService.validateAiPrompt(prompt);
+            if (promptValidationResult.warnings.length > 0) {
+                this.securityService.logWarnings(promptValidationResult.warnings);
+            }
 
             const generatedText = await this.aiContentService.generateContent(prompt);
 

@@ -1,8 +1,9 @@
 import * as urlParser from "node:url";
 import { Worker } from "node:worker_threads";
+import sanitize from "sanitize-html";
 
 import {
-    Service, Logger
+    Service, Logger, Config
 } from "@cmmv/core";
 
 import {
@@ -11,13 +12,15 @@ import {
 
 //@ts-ignore
 import { AIContentService } from "@cmmv/ai-content";
+import { SecurityService } from "../security/security.service";
 
 @Service()
 export class ParserService {
     private readonly logger = new Logger("ParserService");
 
     constructor(
-        private readonly aiContentService: AIContentService
+        private readonly aiContentService: AIContentService,
+        private readonly securityService: SecurityService
     ) {}
 
     /**
@@ -57,7 +60,8 @@ export class ParserService {
     private async fetchHTML(url: string): Promise<string> {
         try {
             const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 15000);
+            const fetchTimeout = Config.get("security.parser.fetchTimeout", 15000);
+            const timeoutId = setTimeout(() => controller.abort(), fetchTimeout);
 
             this.logger.log(`Starting fetch for URL: ${url}`);
 
@@ -91,7 +95,8 @@ export class ParserService {
                     htmlContent = await Promise.race([
                         textPromise,
                         new Promise<string>((_, reject) => {
-                            setTimeout(() => reject(new Error('Timeout reading response body')), 30000);
+                            const readTimeout = Config.get("security.parser.readTimeout", 30000);
+                            setTimeout(() => reject(new Error('Timeout reading response body')), readTimeout);
                         })
                     ]);
                 } else {
@@ -101,7 +106,8 @@ export class ParserService {
                     const buffer = await Promise.race([
                         bufferPromise,
                         new Promise<ArrayBuffer>((_, reject) => {
-                            setTimeout(() => reject(new Error('Timeout reading response body')), 30000);
+                            const readTimeout = Config.get("security.parser.readTimeout", 30000);
+                            setTimeout(() => reject(new Error('Timeout reading response body')), readTimeout);
                         })
                     ]);
 
@@ -135,6 +141,13 @@ export class ParserService {
                 }
 
                 this.logger.log(`Successfully read HTML content (${htmlContent.length} bytes) from ${url}`);
+
+                // Validate HTML content for security issues (permissive approach - only warnings)
+                const validationResult = this.securityService.validateHtmlContent(htmlContent, `fetchHTML:${url}`);
+                if (validationResult.warnings.length > 0) {
+                    this.securityService.logWarnings(validationResult.warnings);
+                }
+
                 return htmlContent;
 
             } catch (readError) {
@@ -144,7 +157,7 @@ export class ParserService {
         } catch (error: unknown) {
             if (error instanceof DOMException && error.name === 'AbortError') {
                 this.logger.error(`Fetch timeout for URL: ${url}`);
-                throw new Error(`Fetch timeout after 15 seconds: ${url}`);
+                throw new Error(`Fetch timeout after ${fetchTimeout / 1000} seconds: ${url}`);
             }
 
             const errorMessage = error instanceof Error ? error.message : String(error);
@@ -221,6 +234,12 @@ Return your analysis as a JSON object with the following format:
 HTML to analyze:
 ${truncatedHtml}
 `;
+
+            // Validate AI prompt for security issues (permissive approach - only warnings)
+            const promptValidationResult = this.securityService.validateAiPrompt(promptString);
+            if (promptValidationResult.warnings.length > 0) {
+                this.securityService.logWarnings(promptValidationResult.warnings);
+            }
 
             const textResponse = await this.aiContentService.generateContent(promptString);
 
@@ -384,6 +403,32 @@ ${truncatedHtml}
                         if (bodyMatch) bodyContent = bodyMatch[1];
                     }
 
+                    // Sanitize extracted HTML content
+                    if (bodyContent) {
+                        bodyContent = sanitize(bodyContent, {
+                            allowedTags: sanitize.defaults.allowedTags.concat(['img', 'figure', 'figcaption', 'picture', 'source']),
+                            allowedAttributes: {
+                                'a': ['href', 'name', 'target', 'title', 'rel'],
+                                'img': ['src', 'srcset', 'alt', 'title', 'width', 'height', 'loading'],
+                                'figure': ['class'],
+                                'figcaption': [],
+                                'picture': [],
+                                'source': ['srcset', 'media', 'type']
+                            },
+                            allowedIframeHostnames: ['www.youtube.com', 'player.vimeo.com'],
+                            transformTags: {
+                                'a': function(tagName, attribs) {
+                                    // Add noopener noreferrer to external links
+                                    if (attribs.href && attribs.href.startsWith('http')) {
+                                        attribs.target = attribs.target || '_blank';
+                                        attribs.rel = (attribs.rel || '') + ' noopener noreferrer';
+                                    }
+                                    return { tagName, attribs };
+                                }
+                            }
+                        });
+                    }
+
                     if (bodyContent.length > 5000)
                         bodyContent = bodyContent.substring(0, 5000) + '...';
 
@@ -514,7 +559,33 @@ ${truncatedHtml}
                     const contentMatch = await this.runRegexWithTimeout(html, parser.content);
 
                     if (contentMatch) {
-                        result.content = contentMatch[0].trim();
+                        let extractedContent = contentMatch[0].trim();
+
+                        // Sanitize HTML content for security
+                        extractedContent = sanitize(extractedContent, {
+                            allowedTags: sanitize.defaults.allowedTags.concat(['img', 'figure', 'figcaption', 'picture', 'source']),
+                            allowedAttributes: {
+                                'a': ['href', 'name', 'target', 'title', 'rel'],
+                                'img': ['src', 'srcset', 'alt', 'title', 'width', 'height', 'loading'],
+                                'figure': ['class'],
+                                'figcaption': [],
+                                'picture': [],
+                                'source': ['srcset', 'media', 'type']
+                            },
+                            allowedIframeHostnames: ['www.youtube.com', 'player.vimeo.com'],
+                            transformTags: {
+                                'a': function(tagName, attribs) {
+                                    // Add noopener noreferrer to external links
+                                    if (attribs.href && attribs.href.startsWith('http')) {
+                                        attribs.target = attribs.target || '_blank';
+                                        attribs.rel = (attribs.rel || '') + ' noopener noreferrer';
+                                    }
+                                    return { tagName, attribs };
+                                }
+                            }
+                        });
+
+                        result.content = extractedContent;
                         confidenceScore += 25;
                     }
                 } catch (error) {
@@ -714,6 +785,12 @@ ${truncatedHtml}
      * @returns The AI response
      */
     private async executeAIPrompt(prompt: string): Promise<any> {
+        // Validate AI prompt for security issues (permissive approach - only warnings)
+        const promptValidationResult = this.securityService.validateAiPrompt(prompt);
+        if (promptValidationResult.warnings.length > 0) {
+            this.securityService.logWarnings(promptValidationResult.warnings);
+        }
+
         const textResponse = await this.aiContentService.generateContent(prompt);
 
         if (!textResponse) throw new Error("AI response is empty");

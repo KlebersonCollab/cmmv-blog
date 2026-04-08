@@ -1,4 +1,6 @@
-import { Service, Logger } from "@cmmv/core";
+import { Service, Logger, Config } from "@cmmv/core";
+import validator from "validator";
+import { SecurityService } from "../security/security.service";
 
 export interface SanitizeStats {
     removedLinks: string[];
@@ -11,11 +13,7 @@ export interface SanitizeResult {
     stats: SanitizeStats;
 }
 
-const MAX_LINK_CHECKS = 15;
-const MAX_VIDEO_CHECKS = 10;
-const MAX_IMAGE_CHECKS = 20;
-const URL_CHECK_TIMEOUT_MS = 5000;
-const MIN_TEXT_LENGTH_TO_KEEP_BLOCK = 40;
+// Note: Constants moved to Config.get() in methods - kept for backward compatibility
 
 // Block-level HTML tags whose container we remove when the link/image inside is invalid
 const BLOCK_TAGS = ['p', 'div', 'figure', 'section', 'article', 'li', 'blockquote'];
@@ -39,6 +37,12 @@ const BROWSER_UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36
 @Service()
 export class ContentSanitizer {
     private readonly logger = new Logger("ContentSanitizer");
+    private readonly securityService: SecurityService;
+
+    constructor(securityService: SecurityService) {
+        this.securityService = securityService;
+        this.logger.log('ContentSanitizer initialized with security validation');
+    }
 
     /**
      * Entry point: sanitize HTML content.
@@ -113,13 +117,15 @@ export class ContentSanitizer {
         deduped = this.cleanOrphanedBlocks(deduped);
 
         // Pass 2: Reachability check
-        const srcsToCheck = uniqueSrcs.slice(0, MAX_IMAGE_CHECKS);
+        const maxImageChecks = Config.get("security.sanitizer.maxImageChecks", 20);
+        const srcsToCheck = uniqueSrcs.slice(0, maxImageChecks);
         if (srcsToCheck.length === 0) return { html: deduped, removedImages };
 
+        const urlCheckTimeout = Config.get("security.sanitizer.urlCheckTimeout", 5000);
         const checkResults = await Promise.all(
             srcsToCheck.map(async (src) => ({
                 src,
-                reachable: await this.isUrlReachable(src, URL_CHECK_TIMEOUT_MS),
+                reachable: await this.isUrlReachable(src, urlCheckTimeout),
             }))
         );
 
@@ -160,13 +166,15 @@ export class ContentSanitizer {
             collected.push({ tag: match[0], url: this.extractSrcFromTag(match[0]) });
         }
 
-        const targets = collected.slice(0, MAX_VIDEO_CHECKS);
+        const maxVideoChecks = Config.get("security.sanitizer.maxVideoChecks", 10);
+        const targets = collected.slice(0, maxVideoChecks);
         if (targets.length === 0) return { html, removedVideos };
 
+        const urlCheckTimeout = Config.get("security.sanitizer.urlCheckTimeout", 5000);
         const validationResults = await Promise.all(
             targets.map(async ({ tag, url }) => {
                 if (!url) return { tag, remove: true, url: '' };
-                const reachable = await this.isUrlReachable(url, URL_CHECK_TIMEOUT_MS);
+                const reachable = await this.isUrlReachable(url, urlCheckTimeout);
                 return { tag, remove: !reachable, url };
             })
         );
@@ -197,15 +205,17 @@ export class ContentSanitizer {
             const href = hrefMatch[1].trim();
             if (this.shouldSkipLink(href)) continue;
             hrefSet.add(href);
-            if (hrefSet.size >= MAX_LINK_CHECKS) break;
+            const maxLinkChecks = Config.get("security.sanitizer.maxLinkChecks", 15);
+            if (hrefSet.size >= maxLinkChecks) break;
         }
 
         if (hrefSet.size === 0) return { html, removedLinks };
 
+        const urlCheckTimeout = Config.get("security.sanitizer.urlCheckTimeout", 5000);
         const checkResults = await Promise.all(
             Array.from(hrefSet).map(async (href) => ({
                 href,
-                reachable: await this.isUrlReachable(href, URL_CHECK_TIMEOUT_MS),
+                reachable: await this.isUrlReachable(href, urlCheckTimeout),
             }))
         );
 
@@ -272,7 +282,8 @@ export class ContentSanitizer {
         // Strip the tag being removed and other HTML tags
         const remainingHtml = blockContent.replace(tagToRemove, '');
         const text = this.stripTags(remainingHtml).trim();
-        return text.length < MIN_TEXT_LENGTH_TO_KEEP_BLOCK;
+        const minTextLength = Config.get("security.sanitizer.minTextLength", 40);
+        return text.length < minTextLength;
     }
 
     /**
@@ -319,8 +330,15 @@ export class ContentSanitizer {
 
     private shouldSkipLink(href: string): boolean {
         if (!href) return true;
+
+        // Validate URL security first
+        const validationResult = this.validateUrl(href, 'link_validation');
+        if (validationResult.warnings.length > 0) {
+            this.securityService.logWarnings(validationResult.warnings);
+        }
+
         const lower = href.toLowerCase().trim();
-        return lower.startsWith('mailto:') || lower.startsWith('tel:') || 
+        return lower.startsWith('mailto:') || lower.startsWith('tel:') ||
                lower.startsWith('javascript:') || lower.startsWith('#') || lower === '/';
     }
 
@@ -334,7 +352,7 @@ export class ContentSanitizer {
             .trim();
     }
 
-    async isUrlReachable(url: string, timeoutMs: number = URL_CHECK_TIMEOUT_MS): Promise<boolean> {
+    async isUrlReachable(url: string, timeoutMs?: number): Promise<boolean> {
         try {
             // Check whitelist first
             const urlObj = new URL(url);
@@ -343,7 +361,8 @@ export class ContentSanitizer {
             }
 
             const controller = new AbortController();
-            const timer = setTimeout(() => controller.abort(), timeoutMs);
+            const actualTimeout = timeoutMs || Config.get("security.sanitizer.urlCheckTimeout", 5000);
+            const timer = setTimeout(() => controller.abort(), actualTimeout);
 
             let response: Response;
 
@@ -374,6 +393,58 @@ export class ContentSanitizer {
             return response.status < 400 || response.status === 403 || response.status === 401;
         } catch {
             return false;
+        }
+    }
+
+    /**
+     * Validate URL for security issues using validator.js
+     */
+    private validateUrl(url: string, context: string): import("../security/security.service").SecurityValidationResult {
+        return this.securityService.validateUrl(url, context);
+    }
+
+    /**
+     * Check if domain is in allowed list (extending SOCIAL_DOMAINS)
+     */
+    private isAllowedDomain(url: string): boolean {
+        try {
+            const urlObj = new URL(url);
+            const hostname = urlObj.hostname.toLowerCase();
+
+            // Check against SOCIAL_DOMAINS
+            if (SOCIAL_DOMAINS.some(domain => hostname.endsWith(domain))) {
+                return true;
+            }
+
+            // Validate domain using validator.js
+            return validator.isFQDN(hostname) || validator.isIP(hostname);
+        } catch {
+            return false;
+        }
+    }
+
+    /**
+     * Enhanced URL normalization with validation
+     */
+    private normalizeUrlWithValidation(url: string): string {
+        try {
+            const normalized = this.normalizeImageUrl(url);
+
+            // Additional validation checks
+            const urlObj = new URL(normalized);
+
+            // Validate scheme (http/https only for security)
+            const scheme = urlObj.protocol.slice(0, -1).toLowerCase();
+            if (scheme !== 'http' && scheme !== 'https') {
+                const validationResult = this.securityService.validateUrl(normalized, 'url_normalization');
+                if (validationResult.warnings.length > 0) {
+                    this.securityService.logWarnings(validationResult.warnings);
+                }
+            }
+
+            return normalized;
+        } catch {
+            return url;
         }
     }
 }

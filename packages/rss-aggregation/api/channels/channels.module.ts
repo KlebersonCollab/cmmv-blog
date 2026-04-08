@@ -8,7 +8,11 @@ import {
     ChannelsController
 } from "./channels.controller";
 
+import {
+    SecurityService
+} from "../security/security.service";
+
 export const RSSChannelsModule = new Module('rss-channels', {
-    providers: [ChannelsService],
+    providers: [ChannelsService, SecurityService],
     controllers: [ChannelsController]
 });

@@ -12,25 +12,54 @@ import {
     RawService
 } from "./raw.service";
 
+import {
+    SecurityService
+} from "../security/security.service";
+
 @Controller("feed/raw")
 export class RawController {
-    constructor(private readonly rawService: RawService){}
+    constructor(
+        private readonly rawService: RawService,
+        private readonly securityService: SecurityService
+    ){}
 
     @Get("getRaws", {exclude: true })
     @Auth("feedraw:get")
     async getRaws(@Queries() queries: any) {
+        // Validate query parameters for security issues (permissive approach - only warnings)
+        const validationResult = this.securityService.validateJson(queries, 'getRaws_endpoint');
+        if (validationResult.warnings.length > 0) {
+            this.securityService.logWarnings(validationResult.warnings);
+        }
+
         return await this.rawService.getRaws(queries);
     }
 
     @Post("getAIRaw/:id", {exclude: true })
     @Auth("feedraw:get")
     async getAIRaw(@Param("id") id: string, @Body() data?: any) {
+        // Validate request body for security issues (permissive approach - only warnings)
+        if (data) {
+            const validationResult = this.securityService.validateRequestBody(data, 'getAIRaw_endpoint');
+            if (validationResult.warnings.length > 0) {
+                this.securityService.logWarnings(validationResult.warnings);
+            }
+        }
+
         return await this.rawService.getAIRaw(id, data?.content, data?.promptId, data?.model);
     }
 
     @Post("startAIJob/:id", {exclude: true })
     @Auth("feedraw:get")
     async startAIJob(@Param("id") id: string, @Body() data?: any) {
+        // Validate request body for security issues (permissive approach - only warnings)
+        if (data) {
+            const validationResult = this.securityService.validateRequestBody(data, 'startAIJob_endpoint');
+            if (validationResult.warnings.length > 0) {
+                this.securityService.logWarnings(validationResult.warnings);
+            }
+        }
+
         const jobId = await this.rawService.startAIJob(id, data?.content, data?.promptId, data?.model);
         return { jobId };
     }
@@ -57,22 +86,49 @@ export class RawController {
     @Put("updateRaw/:id", {exclude: true })
     @Auth("feedraw:update")
     async updateRaw(@Param("id") id: string, @Body() data: any) {
+        // Validate request body for security issues (permissive approach - only warnings)
+        if (data) {
+            const validationResult = this.securityService.validateRequestBody(data, 'updateRaw_endpoint');
+            if (validationResult.warnings.length > 0) {
+                this.securityService.logWarnings(validationResult.warnings);
+            }
+        }
+
         return await this.rawService.updateRaw(id, data);
     }
 
     @Put("rejectRaw/:id", {exclude: true })
     @Auth("feedraw:update")
     async rejectRaw(@Param("id") id: string) {
+        // Validate ID format for security (permissive approach - only warnings)
+        if (id && typeof id === 'string') {
+            const validationResult = this.securityService.validateJson({ id }, 'rejectRaw_endpoint');
+            if (validationResult.warnings.length > 0) {
+                this.securityService.logWarnings(validationResult.warnings);
+            }
+        }
         return await this.rawService.rejectRaw(id);
     }
 
     @Get("imageProxy", {exclude: true })
     async imageProxy(@Query("url") url: string, @Response() res: Response) {
+        // Validate URL input for security issues (permissive approach - only warnings)
+        const validationResult = this.securityService.validateUrl(url, 'imageProxy_endpoint');
+        if (validationResult.warnings.length > 0) {
+            this.securityService.logWarnings(validationResult.warnings);
+        }
+
         return await this.rawService.proxyImage(url, res);
     }
 
     @Get("audioProxy", {exclude: true })
     async audioProxy(@Query("url") url: string, @Response() res: Response) {
+        // Validate URL input for security issues (permissive approach - only warnings)
+        const validationResult = this.securityService.validateUrl(url, 'audioProxy_endpoint');
+        if (validationResult.warnings.length > 0) {
+            this.securityService.logWarnings(validationResult.warnings);
+        }
+
         return await this.rawService.proxyAudio(url, res);
     }
 
@@ -87,6 +143,13 @@ export class RawController {
     async cleanChannelRaws(
         @Param("channelId") channelId: string
     ) {
+        // Validate channelId for security (permissive approach - only warnings)
+        if (channelId && typeof channelId === 'string') {
+            const validationResult = this.securityService.validateJson({ channelId }, 'cleanChannelRaws_endpoint');
+            if (validationResult.warnings.length > 0) {
+                this.securityService.logWarnings(validationResult.warnings);
+            }
+        }
         return await this.rawService.cleanChannelRaws(channelId);
     }
 

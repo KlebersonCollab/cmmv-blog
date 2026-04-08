@@ -12,7 +12,11 @@ import {
     ContentSanitizer
 } from "./content-sanitizer";
 
+import {
+    SecurityService
+} from "../security/security.service";
+
 export const RSSRawModule = new Module('rss-raw', {
-    providers: [RawService, ContentSanitizer],
+    providers: [RawService, ContentSanitizer, SecurityService],
     controllers: [RawController]
 });
