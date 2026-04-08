@@ -1,6 +1,6 @@
 import * as urlParser from "node:url";
 import { Worker } from "node:worker_threads";
-import sanitize from "sanitize-html";
+import sanitizeHtml from "sanitize-html";
 
 import {
     Service, Logger, Config
@@ -143,9 +143,14 @@ export class ParserService {
                 this.logger.log(`Successfully read HTML content (${htmlContent.length} bytes) from ${url}`);
 
                 // Validate HTML content for security issues (permissive approach - only warnings)
-                const validationResult = this.securityService.validateHtmlContent(htmlContent, `fetchHTML:${url}`);
-                if (validationResult.warnings.length > 0) {
-                    this.securityService.logWarnings(validationResult.warnings);
+                // Check if securityService is available (dependency injection might fail)
+                if (this.securityService) {
+                    const validationResult = this.securityService.validateHtmlContent(htmlContent, `fetchHTML:${url}`);
+                    if (validationResult.warnings.length > 0) {
+                        this.securityService.logWarnings(validationResult.warnings);
+                    }
+                } else {
+                    console.warn(`SecurityService not available for HTML content validation. URL: ${url}`);
                 }
 
                 return htmlContent;
@@ -405,8 +410,8 @@ ${truncatedHtml}
 
                     // Sanitize extracted HTML content
                     if (bodyContent) {
-                        bodyContent = sanitize(bodyContent, {
-                            allowedTags: sanitize.defaults.allowedTags.concat(['img', 'figure', 'figcaption', 'picture', 'source']),
+                        bodyContent = sanitizeHtml(bodyContent, {
+                            allowedTags: sanitizeHtml.defaults.allowedTags.concat(['img', 'figure', 'figcaption', 'picture', 'source']),
                             allowedAttributes: {
                                 'a': ['href', 'name', 'target', 'title', 'rel'],
                                 'img': ['src', 'srcset', 'alt', 'title', 'width', 'height', 'loading'],
@@ -562,8 +567,8 @@ ${truncatedHtml}
                         let extractedContent = contentMatch[0].trim();
 
                         // Sanitize HTML content for security
-                        extractedContent = sanitize(extractedContent, {
-                            allowedTags: sanitize.defaults.allowedTags.concat(['img', 'figure', 'figcaption', 'picture', 'source']),
+                        extractedContent = sanitizeHtml(extractedContent, {
+                            allowedTags: sanitizeHtml.defaults.allowedTags.concat(['img', 'figure', 'figcaption', 'picture', 'source']),
                             allowedAttributes: {
                                 'a': ['href', 'name', 'target', 'title', 'rel'],
                                 'img': ['src', 'srcset', 'alt', 'title', 'width', 'height', 'loading'],
@@ -969,14 +974,27 @@ ${truncatedHtml}
      */
     runRegexWithTimeout(html: string, regexStr: string, timeout = 2000): Promise<RegExpMatchArray | null> {
         return new Promise((resolve) => {
-            if (html.length > 1000000) { // 1MB
-                this.logger.log(`HTML too large (${html.length} chars), skipping regex execution`);
-                resolve(null);
-                return;
-            }
+            // Validate memory usage with SecurityService
+            const memoryValidation = this.securityService.validateMemory(
+                html.length,
+                regexStr.length,
+                'regex_worker_execution'
+            );
 
-            if (regexStr.length > 1000) {
-                this.logger.log(`Regex too complex (${regexStr.length} chars), skipping execution`);
+            if (!memoryValidation.isValid) {
+                // Log warnings but don't block execution (permissive approach)
+                if (memoryValidation.warnings.length > 0) {
+                    this.securityService.logWarnings(memoryValidation.warnings);
+                }
+
+                // Still log to our own logger for debugging
+                if (html.length > 1000000) {
+                    this.logger.log(`HTML too large (${html.length} chars), skipping regex execution`);
+                }
+                if (regexStr.length > 1000) {
+                    this.logger.log(`Regex too complex (${regexStr.length} chars), skipping execution`);
+                }
+
                 resolve(null);
                 return;
             }

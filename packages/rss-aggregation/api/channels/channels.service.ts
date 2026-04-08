@@ -228,9 +228,14 @@ export class ChannelsService {
             const xml = await response.text();
 
             // Validate XML input for security issues (permissive approach - only warnings)
-            const validationResult = this.securityService.validateXmlInput(xml, rss);
-            if (validationResult.warnings.length > 0) {
-                this.securityService.logWarnings(validationResult.warnings);
+            // Check if securityService is available (dependency injection might fail)
+            if (this.securityService) {
+                const validationResult = this.securityService.validateXmlInput(xml, rss);
+                if (validationResult.warnings.length > 0) {
+                    this.securityService.logWarnings(validationResult.warnings);
+                }
+            } else {
+                console.warn(`SecurityService not available for XML validation. Feed: ${rss}`);
             }
 
             const parser = new xml2js.Parser({

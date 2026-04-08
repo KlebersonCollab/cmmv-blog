@@ -156,18 +156,41 @@ export class RawController {
     @Post("reprocess/:id", {exclude: true })
     @Auth("feedraw:update")
     async reprocessRaw(@Param("id") id: string) {
+        // Validate ID format for security (permissive approach - only warnings)
+        if (id && typeof id === 'string') {
+            const validationResult = this.securityService.validateJson({ id }, 'reprocessRaw_endpoint');
+            if (validationResult.warnings.length > 0) {
+                this.securityService.logWarnings(validationResult.warnings);
+            }
+        }
         return await this.rawService.reprocessRaw(id);
     }
 
     @Post("classifyRawsWithAI", {exclude: true })
     @Auth("feedraw:update")
     async classifyRawsWithAI() {
+        // Log security context for AI classification batch job
+        const validationResult = this.securityService.validateJson(
+            { action: 'batch_ai_classification' },
+            'classifyRawsWithAI_endpoint'
+        );
+        if (validationResult.warnings.length > 0) {
+            this.securityService.logWarnings(validationResult.warnings);
+        }
         return await this.rawService.classifyRawsWithAI();
     }
 
     @Post("startBatchAIJob", {exclude: true })
     @Auth("feedraw:get")
     async startBatchAIJob(@Body() data: any) {
+        // Validate request body for security issues (permissive approach - only warnings)
+        if (data) {
+            const validationResult = this.securityService.validateRequestBody(data, 'startBatchAIJob_endpoint');
+            if (validationResult.warnings.length > 0) {
+                this.securityService.logWarnings(validationResult.warnings);
+            }
+        }
+
         if (!data?.ids || !Array.isArray(data.ids)) {
             throw new HttpException("IDs array is required", HttpStatus.BAD_REQUEST);
         }

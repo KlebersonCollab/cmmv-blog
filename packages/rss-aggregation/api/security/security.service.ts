@@ -652,6 +652,48 @@ export class SecurityService {
   }
 
   /**
+   * Validate memory usage for worker operations
+   * @param htmlSize - Size of HTML content in bytes
+   * @param regexLength - Length of regex pattern
+   * @param context - Context identifier
+   * @returns Validation result with warnings
+   */
+  validateMemory(htmlSize: number, regexLength: number, context: string): SecurityValidationResult {
+    const warnings: SecurityWarning[] = [];
+    let isValid = true;
+
+    // Check HTML size limit (configurable, default 1MB)
+    const maxHtmlSizeBytes = Config.get("security.memory.maxHtmlSizeBytes", 1000000);
+    if (htmlSize > maxHtmlSizeBytes) {
+      warnings.push(this.createWarning(
+        'memory_usage',
+        'high',
+        `HTML content exceeds memory limit: ${htmlSize} bytes > ${maxHtmlSizeBytes} bytes`,
+        { context, htmlSize, maxHtmlSizeBytes }
+      ));
+      isValid = false;
+    }
+
+    // Check regex complexity limit (configurable, default 1000 chars)
+    const maxRegexLength = Config.get("security.memory.maxRegexLength", 1000);
+    if (regexLength > maxRegexLength) {
+      warnings.push(this.createWarning(
+        'memory_usage',
+        'high',
+        `Regex pattern exceeds complexity limit: ${regexLength} chars > ${maxRegexLength} chars`,
+        { context, regexLength, maxRegexLength }
+      ));
+      isValid = false;
+    }
+
+    return {
+      isValid,
+      warnings,
+      sanitizedData: { htmlSize, regexLength }
+    };
+  }
+
+  /**
    * Create a standardized security warning
    */
   private createWarning(
