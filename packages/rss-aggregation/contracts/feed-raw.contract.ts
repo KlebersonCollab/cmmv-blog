@@ -184,4 +184,10 @@ export class FeedRawContract extends AbstractContract {
         defaultValue: 'none',
     })
     aiStatus!: string;
+
+    @ContractField({
+        protoType: 'string',
+        nullable: true,
+    })
+    aiValidation?: string;
 }

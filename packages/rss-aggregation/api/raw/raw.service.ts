@@ -309,7 +309,11 @@ export class RawService {
                - Use <ul>/<li> for lists
                - DO NOT write any conclusion or summary paragraph. The article should feel unfinished and open-ended.
                - DO NOT wrap up the discussion or provide closing thoughts.
-               - ONLY use images that exist in the original post - DO NOT create or generate new images that don't exist
+               - MEDIA PRESERVATION: You are ALLOWED to keep <img>, <video>, and <iframe> tags from the original content.
+               - EXACT MATCH: You MUST NOT invent, guess, or modify any media URLs. If you use an image, copy its exact HTML tag.
+               - NO RELATIVE PATHS: If the original image had a relative URL (e.g. /wp-content/pic.jpg), ignore it and do NOT include it. Only keep absolute http/https URLs.
+               - SEO & E-E-A-T: Ensure the content is structured with logical hierarchy (use <h2> and <h3>, do not generate an <h1>). 
+               - Incorporate original insights if context allows, write clearly for readability, and avoid keyword stuffing to signal Expertise and Trustworthiness.
             
             4. INPUT DATA:
                Title: ${contentToProcess.title}
@@ -369,8 +373,9 @@ export class RawService {
                 2. STYLE INSTRUCTIONS: ${customPromptContinuation}
                 3. FORMATTING: Use TipTap compatible HTML (<h2>, <p>, <ul>).
                 4. NO CONCLUSIONS: DO NOT write any conclusion, summary, or closing thoughts.
-                5. IMAGES: ONLY use images that already exist. DO NOT generate new ones.
-                6. FLOW: Continue directly from where the current text ends.
+                5. MEDIA PRESERVATION: You may keep original <img> and <video> tags exactly as they were. Do NOT generate new ones. Do NOT use relative URLs.
+                6. FLOW: Continue directly from where the current text ends without breaking logical flow.
+                7. SEO & E-E-A-T: Ensure proper heading structures (<h2>, <h3>). Add depth and original insight without writing a conclusion. Avoid keyword stuffing.
                 
                 METADATA:
                 Original Title: ${contentToProcess.title}
@@ -440,6 +445,7 @@ export class RawService {
                 }
 
                 // Sanitize: remove invalid links, invalid videos and duplicate images
+                let aiValidationStats = null;
                 try {
                     this.logger.log(`[Job ${jobId}] Sanitizing content for raw ${job.rawId}...`);
                     const sanitizeResult = await this.contentSanitizer.sanitize(
@@ -449,6 +455,13 @@ export class RawService {
                     parsedContent.content = sanitizeResult.html;
 
                     const { removedLinks, removedVideos, removedImages } = sanitizeResult.stats;
+                    
+                    if (removedLinks.length > 0 || removedVideos.length > 0 || removedImages.length > 0) {
+                        aiValidationStats = JSON.stringify({
+                            removedLinks, removedVideos, removedImages
+                        });
+                    }
+
                     if (removedLinks.length > 0)
                         this.logger.log(`[Job ${jobId}] Removed ${removedLinks.length} invalid link(s): ${removedLinks.join(', ')}`);
                     if (removedVideos.length > 0)
@@ -468,6 +481,7 @@ export class RawService {
                     suggestedTags: parsedContent.suggestedTags || [],
                     suggestedCategories: parsedContent.suggestedCategories || [],
                     aiProcessed: true,
+                    aiValidation: aiValidationStats,
                     processedAt: new Date()
                 };
 
@@ -484,6 +498,7 @@ export class RawService {
                     aiModel: job.model || Config.get("blog.aiService", "gemini"),
                     aiPromptId: job.promptId,
                     aiFeatureImage: raw.featureImage,
+                    aiValidation: aiValidationStats,
                     aiStatus: 'completed'
                 });
 

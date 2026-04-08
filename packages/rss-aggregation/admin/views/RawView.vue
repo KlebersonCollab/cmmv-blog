@@ -559,6 +559,33 @@
                                 </div>
                             </div>
 
+                            <!-- AI Validation Report -->
+                            <div v-show="parsedAiValidation" class="mb-6 bg-yellow-50 border-l-4 border-yellow-400 p-4 rounded-r-md shadow-sm">
+                                <div class="flex items-start">
+                                    <div class="flex-shrink-0">
+                                        <svg class="h-5 w-5 text-yellow-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                            <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+                                        </svg>
+                                    </div>
+                                    <div class="ml-3">
+                                        <h3 class="text-sm font-medium text-yellow-800">Media Sanitzation Report (Removed Invalid Sources)</h3>
+                                        <div class="mt-2 text-sm text-yellow-700">
+                                            <ul class="list-disc pl-5 space-y-1">
+                                                <li v-if="parsedAiValidation?.removedLinks?.length > 0">
+                                                    <strong>{{ parsedAiValidation.removedLinks.length }} broken links</strong> removed.
+                                                </li>
+                                                <li v-if="parsedAiValidation?.removedVideos?.length > 0">
+                                                    <strong>{{ parsedAiValidation.removedVideos.length }} broken videos/iframes</strong> removed.
+                                                </li>
+                                                <li v-if="parsedAiValidation?.removedImages?.length > 0">
+                                                    <strong>{{ parsedAiValidation.removedImages.length }} invalid or duplicate images</strong> removed.
+                                                </li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
                             <!-- Cover Image Section -->
                             <div class="mb-6">
                                 <div v-if="coverImage" class="relative bg-gray-100 rounded-lg overflow-hidden">
@@ -1425,6 +1452,7 @@ interface FeedItem {
     aiPromptId?: string;
     aiFeatureImage?: string;
     aiStatus?: string;
+    aiValidation?: string;
 }
 
 interface Category {
@@ -1509,6 +1537,15 @@ const hasReadyAISelection = computed(() => {
         const item = feedItems.value.find(i => i.id === id);
         return item && item.aiStatus === 'completed' && !item.postRef;
     });
+});
+
+const parsedAiValidation = computed(() => {
+    if (!aiContent.value || !aiContent.value.aiValidation) return null;
+    try {
+        return JSON.parse(aiContent.value.aiValidation);
+    } catch {
+        return null;
+    }
 });
 
 const batchCreatePostLoading = ref<boolean>(false);
@@ -1740,7 +1777,8 @@ const openPreview = (item: FeedItem): void => {
             title: item.aiTitle,
             content: item.aiContent,
             suggestedTags: item.aiTags ? JSON.parse(item.aiTags) : [],
-            suggestedCategories: item.aiCategories ? JSON.parse(item.aiCategories) : []
+            suggestedCategories: item.aiCategories ? JSON.parse(item.aiCategories) : [],
+            aiValidation: item.aiValidation
         };
         
         if (aiContent.value.suggestedTags && aiContent.value.suggestedTags.length > 0) {
@@ -1847,7 +1885,8 @@ const generateAIContent = async (): Promise<void> => {
                             title: response.title,
                             content: response.content,
                             suggestedTags: response.suggestedTags || [],
-                            suggestedCategories: response.suggestedCategories || []
+                            suggestedCategories: response.suggestedCategories || [],
+                            aiValidation: response.aiValidation
                         };
 
                         if (response.suggestedTags && response.suggestedTags.length > 0) {
@@ -1898,6 +1937,59 @@ const generateAIContent = async (): Promise<void> => {
     }
 };
 
+const importExternalImages = async (content: string, featureImage: string | null, title: string = ''): Promise<{content: string, featureImage: string | null}> => {
+    let processedContent = content;
+    let processedFeatureImage = featureImage;
+    const siteDomain = window.location.hostname;
+
+    if (processedFeatureImage && processedFeatureImage.startsWith('http') && !processedFeatureImage.includes(siteDomain)) {
+        try {
+            showNotification('info', 'Baixando imagem de capa (featureImage)...');
+            const result = await adminClient.medias.importFromUrl({
+                url: processedFeatureImage,
+                alt: title,
+                caption: title
+            });
+            if (result && result.url) {
+                processedFeatureImage = result.url;
+            }
+        } catch (e) {
+            console.error('Failed to import feature image:', e);
+        }
+    }
+
+    const imgRegex = /<img[^>]+src="([^">]+)"[^>]*>/g;
+    let match;
+    const urlsToImport = new Set<string>();
+
+    while ((match = imgRegex.exec(content)) !== null) {
+        const url = match[1];
+        if (url && url.startsWith('http') && !url.includes(siteDomain)) {
+            urlsToImport.add(url);
+        }
+    }
+
+    if (urlsToImport.size > 0) {
+        showNotification('info', `Baixando ${urlsToImport.size} imagem(ns) do conteúdo...`);
+        for (const url of Array.from(urlsToImport)) {
+            try {
+                const result = await adminClient.medias.importFromUrl({
+                    url: url,
+                    alt: title,
+                    caption: title
+                });
+                if (result && result.url) {
+                    processedContent = processedContent.split(url).join(result.url);
+                }
+            } catch (e) {
+                console.error(`Failed to import inline image ${url}:`, e);
+            }
+        }
+    }
+
+    return { content: processedContent, featureImage: processedFeatureImage };
+};
+
 const processPostCreation = async (item: FeedItem): Promise<boolean> => {
     if (!item.aiTitle || !item.aiContent || item.aiStatus !== 'completed') {
         return false;
@@ -1923,7 +2015,10 @@ const processPostCreation = async (item: FeedItem): Promise<boolean> => {
             </p>
         `;
 
-        const content = item.aiContent + sourceAttribution;
+        const initialContent = item.aiContent + sourceAttribution;
+        const initialFeatureImage = item.aiFeatureImage || item.featureImage || null;
+
+        const { content, featureImage } = await importExternalImages(initialContent, initialFeatureImage, item.aiTitle);
 
         const tags = aiTags.length > 0
             ? aiTags
@@ -1936,7 +2031,7 @@ const processPostCreation = async (item: FeedItem): Promise<boolean> => {
                 content: content,
                 status: 'draft',
                 excerpt: item.aiContent.substring(0, 200).replace(/<\/?[^>]+(>|$)/g, "") + '...',
-                featureImage: item.aiFeatureImage || item.featureImage || null,
+                featureImage: featureImage,
                 tags: tags,
                 categories: categoryIds
             },
@@ -1945,10 +2040,10 @@ const processPostCreation = async (item: FeedItem): Promise<boolean> => {
                 metacontent: item.aiContent.substring(0, 155).replace(/<\/?[^>]+(>|$)/g, "") + '...',
                 ogTitle: item.aiTitle,
                 ogcontent: item.aiContent.substring(0, 155).replace(/<\/?[^>]+(>|$)/g, "") + '...',
-                ogImage: item.aiFeatureImage || item.featureImage || null,
+                ogImage: featureImage,
                 twitterTitle: item.aiTitle,
                 twittercontent: item.aiContent.substring(0, 155).replace(/<\/?[^>]+(>|$)/g, "") + '...',
-                twitterImage: item.aiFeatureImage || item.featureImage || null
+                twitterImage: featureImage
             }
         };
 
@@ -2062,7 +2157,11 @@ const createPostFromAI = async (): Promise<void> => {
             </p>
         `;
 
-        const content = aiContent.value.content + sourceAttribution;
+        const initialContent = aiContent.value.content + sourceAttribution;
+
+        const localizationResult = await importExternalImages(initialContent, processedImage, aiContent.value.title);
+        const content = localizationResult.content;
+        processedImage = localizationResult.featureImage;
 
         const tags = selectedTags.value.length > 0
             ? selectedTags.value
