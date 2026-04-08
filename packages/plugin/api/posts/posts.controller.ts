@@ -210,4 +210,18 @@ export class PostsController {
         await this.postsPublicService.recalculateCategories();
         return { message: "Category post counts recalculation initiated." };
     }
+
+    @Post("posts/validate-links", { exclude: true })
+    @Auth("posts:get")
+    async validateLinks(@Body() body: { urls: string[] }) {
+        if (!body.urls || !Array.isArray(body.urls))
+            throw new Error("urls must be an array of strings");
+
+        if (body.urls.length > 200)
+            throw new Error("Maximum 200 URLs per request");
+
+        const results = await this.postsPublicService.validateLinks(body.urls);
+        return { results };
+    }
 }
+

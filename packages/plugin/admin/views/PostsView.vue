@@ -27,6 +27,14 @@
                     </svg>
                     Process Images
                 </button>
+                <!-- Add button for bulk link validation -->
+                <button @click="openBulkLinkValidationDialog"
+                    class="px-2.5 py-1 bg-amber-600 hover:bg-amber-700 text-white text-xs font-medium rounded-md transition-colors flex items-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+                    </svg>
+                    Validate Links
+                </button>
                 <!-- Add search button with dropdown -->
                 <div class="relative">
                     <button @click="toggleSearchDropdown" data-search-toggle
@@ -782,6 +790,316 @@
                         Close
                     </button>
                 </div>
+            </div>
+        </div>
+    </div>
+    <!-- Bulk Link Validation Dialog -->
+    <div v-if="showBulkLinkValidationDialog" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 px-4" style="backdrop-filter: blur(4px);">
+        <div class="bg-neutral-800 rounded-lg shadow-lg w-full max-w-2xl mx-auto">
+            <div class="p-6 border-b border-neutral-700 flex justify-between items-center">
+                <h3 class="text-lg font-medium text-white flex items-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2 text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+                    </svg>
+                    Bulk Link Validation
+                </h3>
+                <button @click="closeBulkLinkValidationDialog" class="text-neutral-400 hover:text-white">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
+            <div class="p-6">
+                <div class="mb-4">
+                    <div class="flex justify-between items-center mb-3">
+                        <h4 class="text-md font-medium text-white">Select Posts to Validate</h4>
+                        <div class="flex items-center">
+                            <input type="checkbox" id="selectAllForValidation" v-model="selectAllForValidation" @change="toggleSelectAllForValidation" class="mr-2 h-4 w-4 rounded text-amber-600 focus:ring-amber-500 border-neutral-600 bg-neutral-700">
+                            <label for="selectAllForValidation" class="text-sm text-neutral-300">Select All</label>
+                        </div>
+                    </div>
+                    <!-- Status filter tabs -->
+                    <div class="flex gap-2 mb-3">
+                        <button
+                            @click="linkValidationStatusFilter = ''"
+                            class="px-2.5 py-1 text-xs font-medium rounded-md transition-colors"
+                            :class="linkValidationStatusFilter === '' ? 'bg-amber-600 text-white' : 'bg-neutral-700 text-neutral-300 hover:bg-neutral-600'"
+                        >
+                            All
+                        </button>
+                        <button
+                            @click="linkValidationStatusFilter = 'draft'"
+                            class="px-2.5 py-1 text-xs font-medium rounded-md transition-colors"
+                            :class="linkValidationStatusFilter === 'draft' ? 'bg-yellow-600 text-white' : 'bg-neutral-700 text-neutral-300 hover:bg-neutral-600'"
+                        >
+                            Draft
+                        </button>
+                        <button
+                            @click="linkValidationStatusFilter = 'published'"
+                            class="px-2.5 py-1 text-xs font-medium rounded-md transition-colors"
+                            :class="linkValidationStatusFilter === 'published' ? 'bg-green-600 text-white' : 'bg-neutral-700 text-neutral-300 hover:bg-neutral-600'"
+                        >
+                            Published
+                        </button>
+                        <button
+                            @click="linkValidationStatusFilter = 'cron'"
+                            class="px-2.5 py-1 text-xs font-medium rounded-md transition-colors"
+                            :class="linkValidationStatusFilter === 'cron' ? 'bg-blue-600 text-white' : 'bg-neutral-700 text-neutral-300 hover:bg-neutral-600'"
+                        >
+                            Scheduled
+                        </button>
+                    </div>
+                    <div v-if="loadingPostsForValidation" class="py-4 flex justify-center">
+                        <div class="animate-spin rounded-full h-6 w-6 border-t-2 border-b-2 border-amber-500"></div>
+                    </div>
+                    <div v-else-if="postsForValidation.length === 0" class="py-4 text-center text-neutral-400">
+                        No posts available for validation.
+                    </div>
+                    <div v-else class="max-h-64 overflow-y-auto border border-neutral-700 rounded-md">
+                        <div class="divide-y divide-neutral-700">
+                            <div v-for="post in postsForValidation" :key="post.id" class="flex items-center p-3 hover:bg-neutral-750">
+                                <input
+                                    type="checkbox"
+                                    :id="'validate-post-' + post.id"
+                                    v-model="selectedPostsForValidation"
+                                    :value="post.id"
+                                    class="mr-3 h-4 w-4 rounded text-amber-600 focus:ring-amber-500 border-neutral-600 bg-neutral-700"
+                                >
+                                <label :for="'validate-post-' + post.id" class="text-sm text-white cursor-pointer flex-1 truncate mr-3">
+                                    {{ post.title }}
+                                </label>
+                                <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium"
+                                    :class="getStatusClass(post.status)">
+                                    {{ post.status === 'cron' ? 'Scheduled' : post.status.charAt(0).toUpperCase() + post.status.slice(1) }}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex justify-end space-x-3 mt-6">
+                    <button
+                        type="button"
+                        @click="closeBulkLinkValidationDialog"
+                        class="px-4 py-2 bg-neutral-700 hover:bg-neutral-600 text-white rounded-md transition-colors"
+                        :disabled="linkValidationLoading"
+                    >
+                        Cancel
+                    </button>
+                    <button
+                        type="button"
+                        @click="startBulkLinkValidation"
+                        class="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-md transition-colors"
+                        :disabled="selectedPostsForValidation.length === 0 || linkValidationLoading"
+                    >
+                        <span v-if="linkValidationLoading" class="flex items-center">
+                            <svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                            Validating...
+                        </span>
+                        <span v-else>Validate {{ selectedPostsForValidation.length }} Posts</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Validation Progress Overlay -->
+            <div
+                v-if="linkValidationLoading"
+                class="absolute inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-10 px-6"
+            >
+                <div class="bg-neutral-800 rounded-lg shadow-lg max-w-md w-full p-6">
+                    <div class="text-center mb-4">
+                        <div class="inline-block animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-amber-500 mb-3"></div>
+                        <h3 class="text-lg font-medium text-white">Validating Links</h3>
+                        <p class="text-neutral-400 mt-1">Checking links, images and videos in your posts</p>
+                    </div>
+
+                    <!-- Progress bar -->
+                    <div class="w-full bg-neutral-700 rounded-full h-4 mb-3">
+                        <div
+                            class="bg-amber-500 h-4 rounded-full transition-all duration-300 ease-out"
+                            :style="{ width: `${(linkValidationProgress.completed / linkValidationProgress.total) * 100}%` }"
+                        ></div>
+                    </div>
+
+                    <div class="text-center text-sm text-neutral-300 mb-4">
+                        <span>{{ linkValidationProgress.completed }} of {{ linkValidationProgress.total }} posts validated</span>
+                    </div>
+
+                    <div v-if="linkValidationProgress.currentPost" class="mb-4">
+                        <p class="text-sm text-neutral-400">Currently validating:</p>
+                        <p class="text-sm font-medium text-white truncate">{{ linkValidationProgress.currentPost }}</p>
+                    </div>
+
+                    <div v-if="linkValidationProgress.linksChecked > 0" class="text-center text-xs text-neutral-400">
+                        {{ linkValidationProgress.linksChecked }} links checked • {{ linkValidationProgress.brokenFound }} broken found
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Link Validation Results Dialog -->
+    <div v-if="showLinkValidationResultsDialog" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 px-4" style="backdrop-filter: blur(4px);">
+        <div class="bg-neutral-800 rounded-lg shadow-lg w-full max-w-3xl mx-auto max-h-[85vh] flex flex-col">
+            <div class="p-6 border-b border-neutral-700 flex justify-between items-center flex-shrink-0">
+                <h3 class="text-lg font-medium text-white flex items-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2 text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+                    </svg>
+                    Link Validation Results
+                </h3>
+                <button @click="showLinkValidationResultsDialog = false" class="text-neutral-400 hover:text-white">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
+            <div class="p-6 overflow-y-auto flex-1">
+                <!-- Summary cards -->
+                <div class="grid grid-cols-3 gap-4 mb-6">
+                    <div class="bg-neutral-750 rounded-lg p-4 text-center">
+                        <div class="text-2xl font-bold text-white">{{ linkValidationResults.totalPosts }}</div>
+                        <div class="text-xs text-neutral-400 mt-1">Posts Validated</div>
+                    </div>
+                    <div class="bg-neutral-750 rounded-lg p-4 text-center">
+                        <div class="text-2xl font-bold text-green-400">{{ linkValidationResults.totalLinks - linkValidationResults.totalBroken }}</div>
+                        <div class="text-xs text-neutral-400 mt-1">Valid Links</div>
+                    </div>
+                    <div class="bg-neutral-750 rounded-lg p-4 text-center">
+                        <div class="text-2xl font-bold" :class="linkValidationResults.totalBroken > 0 ? 'text-red-400' : 'text-green-400'">{{ linkValidationResults.totalBroken }}</div>
+                        <div class="text-xs text-neutral-400 mt-1">Broken Links</div>
+                    </div>
+                </div>
+
+                <!-- Results tabs -->
+                <div class="border-b border-neutral-700 mb-4">
+                    <div class="flex">
+                        <button
+                            @click="linkValidationResultTab = 'broken'"
+                            class="px-4 py-2 font-medium text-sm"
+                            :class="linkValidationResultTab === 'broken' ? 'text-white border-b-2 border-red-500' : 'text-neutral-400 hover:text-white'"
+                        >
+                            Broken ({{ linkValidationResults.totalBroken }})
+                        </button>
+                        <button
+                            @click="linkValidationResultTab = 'all'"
+                            class="px-4 py-2 font-medium text-sm"
+                            :class="linkValidationResultTab === 'all' ? 'text-white border-b-2 border-amber-500' : 'text-neutral-400 hover:text-white'"
+                        >
+                            All Posts ({{ linkValidationResults.totalPosts }})
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Broken links view -->
+                <div v-if="linkValidationResultTab === 'broken'">
+                    <div v-if="linkValidationResults.totalBroken === 0" class="text-center py-8">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 mx-auto text-green-500 mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        <p class="text-green-400 font-medium">All links are valid!</p>
+                        <p class="text-neutral-400 text-sm mt-1">No broken links, images or videos found.</p>
+                    </div>
+                    <div v-else class="space-y-4">
+                        <div v-for="postResult in linkValidationResults.postsWithBrokenLinks" :key="postResult.postId" class="bg-neutral-750 rounded-lg overflow-hidden">
+                            <div class="p-3 border-b border-neutral-700 flex items-center justify-between">
+                                <div class="flex items-center min-w-0">
+                                    <span class="text-sm font-medium text-white truncate">{{ postResult.title }}</span>
+                                    <span class="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-900 text-red-200">
+                                        {{ postResult.brokenLinks.length }} broken
+                                    </span>
+                                </div>
+                                <button @click="editPost(postResult.postId)" class="text-neutral-400 hover:text-white text-xs flex items-center flex-shrink-0 ml-2">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                    </svg>
+                                    Edit
+                                </button>
+                            </div>
+                            <div class="divide-y divide-neutral-700">
+                                <div v-for="(link, idx) in postResult.brokenLinks" :key="idx" class="p-3 flex items-start">
+                                    <div class="mr-3 flex-shrink-0 mt-0.5">
+                                        <span v-if="link.type === 'image'" class="text-blue-400" title="Image">
+                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                            </svg>
+                                        </span>
+                                        <span v-else-if="link.type === 'video'" class="text-purple-400" title="Video">
+                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                                            </svg>
+                                        </span>
+                                        <span v-else class="text-amber-400" title="Link">
+                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+                                            </svg>
+                                        </span>
+                                    </div>
+                                    <div class="flex-1 min-w-0">
+                                        <p class="text-xs text-red-400 truncate" :title="link.url">{{ link.url }}</p>
+                                        <p class="text-xs text-neutral-500 mt-0.5">
+                                            <span class="uppercase font-medium">{{ link.type }}</span>
+                                            <span v-if="link.status"> • HTTP {{ link.status }}</span>
+                                            <span v-if="link.error"> • {{ link.error }}</span>
+                                        </p>
+                                    </div>
+                                    <button
+                                        @click="removeBrokenLink(postResult.postId, link, postResult)"
+                                        :disabled="link.removing"
+                                        class="ml-2 flex-shrink-0 px-2 py-1 text-xs font-medium rounded transition-colors"
+                                        :class="link.removed ? 'bg-green-900 text-green-300 cursor-default' : link.removing ? 'bg-neutral-700 text-neutral-400 cursor-wait' : 'bg-red-900 hover:bg-red-800 text-red-200 cursor-pointer'"
+                                    >
+                                        <span v-if="link.removed">Removed ✓</span>
+                                        <span v-else-if="link.removing">Removing...</span>
+                                        <span v-else>Remove</span>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- All posts view -->
+                <div v-if="linkValidationResultTab === 'all'">
+                    <div class="space-y-2">
+                        <div v-for="postResult in linkValidationResults.allPosts" :key="postResult.postId"
+                            class="flex items-center p-3 bg-neutral-750 rounded-md">
+                            <div :class="postResult.brokenLinks.length > 0 ? 'text-red-500' : 'text-green-500'" class="mr-3">
+                                <svg v-if="postResult.brokenLinks.length === 0" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                                </svg>
+                                <svg v-else xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                                </svg>
+                            </div>
+                            <div class="flex-1 min-w-0">
+                                <span class="text-sm text-white truncate block">{{ postResult.title }}</span>
+                                <span class="text-xs text-neutral-400">{{ postResult.totalLinks }} links checked</span>
+                            </div>
+                            <div class="flex-shrink-0">
+                                <span v-if="postResult.brokenLinks.length > 0" class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-900 text-red-200">
+                                    {{ postResult.brokenLinks.length }} broken
+                                </span>
+                                <span v-else class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-900 text-green-200">
+                                    All valid
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="p-4 border-t border-neutral-700 flex justify-end flex-shrink-0">
+                <button
+                    type="button"
+                    @click="showLinkValidationResultsDialog = false"
+                    class="px-4 py-2 bg-neutral-700 hover:bg-neutral-600 text-white rounded-md transition-colors"
+                >
+                    Close
+                </button>
             </div>
         </div>
     </div>
@@ -1630,4 +1948,329 @@ const processingResults = ref({
     success: [],
     failed: []
 })
+
+// ===== Bulk Link Validation =====
+const showBulkLinkValidationDialog = ref(false)
+const postsForValidation = ref([])
+const loadingPostsForValidation = ref(false)
+const selectedPostsForValidation = ref([])
+const selectAllForValidation = ref(false)
+const linkValidationLoading = ref(false)
+const linkValidationStatusFilter = ref('')
+const linkValidationProgress = ref({
+    total: 0,
+    completed: 0,
+    currentPost: null,
+    linksChecked: 0,
+    brokenFound: 0
+})
+const showLinkValidationResultsDialog = ref(false)
+const linkValidationResultTab = ref('broken')
+const linkValidationResults = ref({
+    totalPosts: 0,
+    totalLinks: 0,
+    totalBroken: 0,
+    allPosts: [],
+    postsWithBrokenLinks: []
+})
+
+function openBulkLinkValidationDialog() {
+    showBulkLinkValidationDialog.value = true
+    loadingPostsForValidation.value = true
+    selectedPostsForValidation.value = []
+    selectAllForValidation.value = false
+    linkValidationStatusFilter.value = ''
+    loadPostsForValidation()
+}
+
+function closeBulkLinkValidationDialog() {
+    showBulkLinkValidationDialog.value = false
+    postsForValidation.value = []
+    selectedPostsForValidation.value = []
+}
+
+async function loadPostsForValidation() {
+    try {
+        loadingPostsForValidation.value = true
+
+        const params = {
+            limit: 100,
+            sortBy: 'createdAt',
+            sort: 'desc'
+        }
+
+        if (linkValidationStatusFilter.value) {
+            params.status = linkValidationStatusFilter.value
+        }
+
+        const response = await adminClient.posts.get(params)
+
+        if (response && response.posts) {
+            postsForValidation.value = response.posts.map(post => ({
+                ...post,
+                author: typeof post.author === 'object' ? post.author.name : post.author,
+            }))
+        } else {
+            postsForValidation.value = []
+        }
+
+        loadingPostsForValidation.value = false
+    } catch (error) {
+        console.error('Failed to load posts for validation:', error)
+        postsForValidation.value = []
+        loadingPostsForValidation.value = false
+        showNotification('error', 'Failed to load posts')
+    }
+}
+
+function toggleSelectAllForValidation() {
+    if (selectAllForValidation.value) {
+        selectedPostsForValidation.value = postsForValidation.value.map(post => post.id)
+    } else {
+        selectedPostsForValidation.value = []
+    }
+}
+
+watch(selectedPostsForValidation, (newVal) => {
+    selectAllForValidation.value = newVal.length > 0 && newVal.length === postsForValidation.value.length
+})
+
+watch(linkValidationStatusFilter, () => {
+    selectedPostsForValidation.value = []
+    selectAllForValidation.value = false
+    loadPostsForValidation()
+})
+
+function extractLinksFromContent(html, featureImage) {
+    const links = []
+    const seen = new Set()
+
+    if (!html && !featureImage) return links
+
+    if (featureImage && featureImage.startsWith('http')) {
+        seen.add(featureImage)
+        links.push({ url: featureImage, type: 'image' })
+    }
+
+    if (!html) return links
+
+    // Extract <img src>
+    const imgRegex = /<img[^>]+src=["']([^"']+)["']/gi
+    let match
+    while ((match = imgRegex.exec(html)) !== null) {
+        const url = match[1]
+        if (url && url.startsWith('http') && !seen.has(url)) {
+            seen.add(url)
+            links.push({ url, type: 'image' })
+        }
+    }
+
+    // Extract <a href>
+    const linkRegex = /<a[^>]+href=["']([^"']+)["']/gi
+    while ((match = linkRegex.exec(html)) !== null) {
+        const url = match[1]
+        if (url && url.startsWith('http') && !seen.has(url)) {
+            seen.add(url)
+            links.push({ url, type: 'link' })
+        }
+    }
+
+    // Extract <video src> and <source src>
+    const videoRegex = /<(?:video|source)[^>]+src=["']([^"']+)["']/gi
+    while ((match = videoRegex.exec(html)) !== null) {
+        const url = match[1]
+        if (url && url.startsWith('http') && !seen.has(url)) {
+            seen.add(url)
+            links.push({ url, type: 'video' })
+        }
+    }
+
+    // Extract <iframe src> (YouTube, Vimeo, etc.)
+    const iframeRegex = /<iframe[^>]+src=["']([^"']+)["']/gi
+    while ((match = iframeRegex.exec(html)) !== null) {
+        const url = match[1]
+        if (url && url.startsWith('http') && !seen.has(url)) {
+            seen.add(url)
+            links.push({ url, type: 'video' })
+        }
+    }
+
+    return links
+}
+
+async function startBulkLinkValidation() {
+    if (selectedPostsForValidation.value.length === 0) return
+
+    try {
+        linkValidationLoading.value = true
+        linkValidationProgress.value = {
+            total: selectedPostsForValidation.value.length,
+            completed: 0,
+            currentPost: null,
+            linksChecked: 0,
+            brokenFound: 0
+        }
+
+        const allPostResults = []
+
+        for (const postId of selectedPostsForValidation.value) {
+            try {
+                const postInfo = postsForValidation.value.find(p => p.id === postId)
+                linkValidationProgress.value.currentPost = postInfo ? postInfo.title : postId
+
+                const postDetails = await adminClient.posts.getById(postId)
+                const post = typeof postDetails === 'string' ? JSON.parse(postDetails) : postDetails
+
+                const links = extractLinksFromContent(post.content, post.featureImage)
+
+                let brokenLinks = []
+
+                if (links.length > 0) {
+                    const urlsToCheck = links.map(l => l.url)
+
+                    try {
+                        const response = await adminClient.posts.validateLinks(urlsToCheck)
+                        const results = response.results || []
+
+                        linkValidationProgress.value.linksChecked += results.length
+
+                        for (const result of results) {
+                            if (!result.ok && result.status !== 403) {
+                                const linkInfo = links.find(l => l.url === result.url)
+                                brokenLinks.push({
+                                    url: result.url,
+                                    type: linkInfo ? linkInfo.type : 'link',
+                                    status: result.status,
+                                    error: result.error || null
+                                })
+                            }
+                        }
+
+                        linkValidationProgress.value.brokenFound += brokenLinks.length
+                    } catch (validateError) {
+                        console.error('Error validating links for post:', postId, validateError)
+                    }
+                }
+
+                allPostResults.push({
+                    postId,
+                    title: post.title || postInfo?.title || 'Unknown',
+                    totalLinks: links.length,
+                    brokenLinks
+                })
+
+                linkValidationProgress.value.completed++
+            } catch (err) {
+                console.error('Error processing post for validation:', postId, err)
+                const postInfo = postsForValidation.value.find(p => p.id === postId)
+                allPostResults.push({
+                    postId,
+                    title: postInfo?.title || postId,
+                    totalLinks: 0,
+                    brokenLinks: [],
+                    error: err.message
+                })
+                linkValidationProgress.value.completed++
+            }
+        }
+
+        const totalLinks = allPostResults.reduce((sum, p) => sum + p.totalLinks, 0)
+        const totalBroken = allPostResults.reduce((sum, p) => sum + p.brokenLinks.length, 0)
+
+        linkValidationResults.value = {
+            totalPosts: allPostResults.length,
+            totalLinks,
+            totalBroken,
+            allPosts: allPostResults,
+            postsWithBrokenLinks: allPostResults.filter(p => p.brokenLinks.length > 0)
+        }
+
+        linkValidationLoading.value = false
+        closeBulkLinkValidationDialog()
+
+        if (totalBroken > 0) {
+            showNotification('warning', `Found ${totalBroken} broken links across ${linkValidationResults.value.postsWithBrokenLinks.length} posts`)
+        } else {
+            showNotification('success', `All ${totalLinks} links are valid across ${allPostResults.length} posts`)
+        }
+
+        linkValidationResultTab.value = totalBroken > 0 ? 'broken' : 'all'
+        showLinkValidationResultsDialog.value = true
+    } catch (error) {
+        console.error('Failed to validate links:', error)
+        linkValidationLoading.value = false
+        showNotification('error', 'Failed to validate links: ' + error.message)
+    }
+}
+
+async function removeBrokenLink(postId, link, postResult) {
+    if (link.removed || link.removing) return
+
+    try {
+        link.removing = true
+
+        const postDetails = await adminClient.posts.getById(postId)
+        const post = typeof postDetails === 'string' ? JSON.parse(postDetails) : postDetails
+
+        let content = post.content || ''
+        const url = link.url.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+
+        if (link.type === 'image') {
+            // Remove <img> tags with this src
+            content = content.replace(new RegExp(`<img[^>]*src=["']${url}["'][^>]*\/?>`, 'gi'), '')
+            // Remove <picture> wrapping removed imgs
+            content = content.replace(/<picture[^>]*>\s*<\/picture>/gi, '')
+            // Remove <figure> wrapping removed imgs
+            content = content.replace(/<figure[^>]*>\s*(<figcaption[^>]*>.*?<\/figcaption>)?\s*<\/figure>/gi, '')
+        } else if (link.type === 'video') {
+            // Remove <iframe> tags with this src
+            content = content.replace(new RegExp(`<iframe[^>]*src=["']${url}["'][^>]*>\\s*<\\/iframe>`, 'gi'), '')
+            // Remove <video>/<source> tags with this src
+            content = content.replace(new RegExp(`<source[^>]*src=["']${url}["'][^>]*\/?>`, 'gi'), '')
+            content = content.replace(new RegExp(`<video[^>]*src=["']${url}["'][^>]*>.*?<\\/video>`, 'gis'), '')
+            // Remove empty video containers
+            content = content.replace(/<video[^>]*>\s*<\/video>/gi, '')
+            // Remove div wrappers for iframes
+            content = content.replace(/<div[^>]*class="[^"]*iframe[^"]*"[^>]*>\s*<\/div>/gi, '')
+        } else {
+            // Remove <a> tags with this href, keep inner text
+            content = content.replace(new RegExp(`<a[^>]*href=["']${url}["'][^>]*>(.*?)<\/a>`, 'gis'), '$1')
+        }
+
+        // Also handle featureImage
+        let featureImage = post.featureImage
+        if (link.type === 'image' && post.featureImage === link.url) {
+            featureImage = ''
+        }
+
+        const updateData = {
+            post: {
+                ...post,
+                content,
+                featureImage,
+                categories: post.categories
+                    ? post.categories.map(cat => (typeof cat === 'object' && cat.id != null) ? cat.id : cat).filter(id => id != null)
+                    : [],
+                tags: post.tags
+                    ? post.tags.map(tag => (typeof tag === 'object' && tag.name != null) ? tag.name : tag).filter(name => name != null)
+                    : []
+            }
+        }
+
+        await adminClient.posts.save(updateData)
+
+        link.removed = true
+        link.removing = false
+
+        // Update counters
+        linkValidationResults.value.totalBroken = linkValidationResults.value.postsWithBrokenLinks
+            .reduce((sum, p) => sum + p.brokenLinks.filter(l => !l.removed).length, 0)
+
+        showNotification('success', `Removed broken ${link.type} from post`)
+    } catch (err) {
+        console.error('Failed to remove broken link:', err)
+        link.removing = false
+        showNotification('error', 'Failed to remove: ' + err.message)
+    }
+}
 </script>

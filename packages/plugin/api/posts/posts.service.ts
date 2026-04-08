@@ -1701,6 +1701,93 @@ export class PostsPublicService {
      * @param caption - Legenda
      * @returns URL da imagem processada ou a original se já for uma URL
      */
+    /**
+     * Validate a list of URLs by performing HEAD requests
+     * @param {string[]} urls - Array of URLs to validate
+     * @returns {Promise<{ url: string, status: number, ok: boolean, error?: string }[]>}
+     */
+    async validateLinks(urls: string[]): Promise<{ url: string, status: number, ok: boolean, error?: string }[]> {
+        const results: { url: string, status: number, ok: boolean, error?: string }[] = [];
+        const TIMEOUT_MS = 10000;
+        const BATCH_SIZE = 5;
+
+        for (let i = 0; i < urls.length; i += BATCH_SIZE) {
+            const batch = urls.slice(i, i + BATCH_SIZE);
+            const batchResults = await Promise.all(
+                batch.map(async (url) => {
+                    try {
+                        if (!url || url.startsWith('data:') || url.startsWith('#') || url.startsWith('mailto:') || url.startsWith('javascript:')) {
+                            return { url, status: 0, ok: true };
+                        }
+
+                        const controller = new AbortController();
+                        const timeout = setTimeout(() => controller.abort(), TIMEOUT_MS);
+
+                        try {
+                            const response = await fetch(url, {
+                                method: 'HEAD',
+                                signal: controller.signal,
+                                redirect: 'follow',
+                                headers: {
+                                    'User-Agent': 'Mozilla/5.0 (compatible; LinkValidator/1.0)'
+                                }
+                            });
+
+                            clearTimeout(timeout);
+
+                            if (!response.ok && response.status === 405) {
+                                const getResponse = await fetch(url, {
+                                    method: 'GET',
+                                    signal: AbortSignal.timeout(TIMEOUT_MS),
+                                    redirect: 'follow',
+                                    headers: {
+                                        'User-Agent': 'Mozilla/5.0 (compatible; LinkValidator/1.0)'
+                                    }
+                                });
+
+                                return {
+                                    url,
+                                    status: getResponse.status,
+                                    ok: getResponse.ok
+                                };
+                            }
+
+                            return {
+                                url,
+                                status: response.status,
+                                ok: response.ok
+                            };
+                        } catch (fetchError: any) {
+                            clearTimeout(timeout);
+
+                            if (fetchError.name === 'AbortError') {
+                                return { url, status: 408, ok: false, error: 'Timeout' };
+                            }
+
+                            return {
+                                url,
+                                status: 0,
+                                ok: false,
+                                error: fetchError.message || 'Network error'
+                            };
+                        }
+                    } catch (err: any) {
+                        return {
+                            url,
+                            status: 0,
+                            ok: false,
+                            error: err.message || 'Unknown error'
+                        };
+                    }
+                })
+            );
+
+            results.push(...batchResults);
+        }
+
+        return results;
+    }
+
     private async processImageIfNeeded(
         imageData: string | null | undefined,
         format: string = "webp",
